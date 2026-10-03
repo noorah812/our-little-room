@@ -142,7 +142,13 @@
         </section>
 
         <div id="typingIndicator" class="typing-indicator"></div>
-
+<div id="replyBar" class="reply-bar hidden">
+    <div class="reply-bar-text">
+        <strong id="replyBarName"></strong>
+        <span id="replyBarMsg"></span>
+    </div>
+    <button type="button" id="replyCancel">✕</button>
+</div>
 
         <form id="messageForm" class="message-form">
 
@@ -193,4 +199,4 @@ window.onerror = function (m, s, l) { alert("ERROR: " + m + " (line " + l + ")")
 
 </body>
     </html>
-      
+    
