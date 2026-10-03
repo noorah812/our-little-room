@@ -129,7 +129,7 @@
         <header class="chat-header">
 
             <div>
-                <h2>🔒 Private Room</h2>
+                <h2 class="cloud-title"><span> Private Room 🔒</span></h2>
                 <span id="roomLabel"></span>
             </div>
 
@@ -167,16 +167,15 @@
   </button>
 
   <button
-    type="submit"
-    class="send-btn"
-    title="Send message"
-    aria-label="Send message"
-  >
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M22 2 11 13"></path>
-      <path d="m22 2-7 20-4-9-9-4Z"></path>
-    </svg>
-  </button>
+  type="submit"
+  class="send-btn"
+  aria-label="Send message"
+>
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M21 3L10.5 13.5"></path>
+    <path d="M21 3L15 21L10.5 13.5L3 9L21 3Z"></path>
+  </svg>
+</button>
 
 </form>
 
@@ -185,7 +184,16 @@
 
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<script>
+window.onerror = function (msg, src, line) {
+    alert("ERROR: " + msg + " (line " + line + ")");
+};
+<script>
+window.onerror = function (msg, src, line) {
+    alert("ERROR: " + msg + " (line " + line + ")");
+};
+</script>
+</script>
     <script src="app.js"></script>
 
 </body>
