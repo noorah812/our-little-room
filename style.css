@@ -360,4 +360,83 @@ button {
     padding: 4px 16px;
     min-height: 24px;
     flex-shrink: 0;
+}
+.reply-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #fff0f7;
+    border-left: 4px solid #ff4f9a;
+    flex-shrink: 0;
+}
+
+.reply-bar-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    color: #4a2338;
+}
+
+.reply-bar-text strong {
+    color: #ff4f9a;
+}
+
+.reply-bar-text span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reply-bar button {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #b8336a;
+}
+
+.reply-quote {
+    background: rgba(0, 0, 0, 0.08);
+    border-left: 3px solid #ff8fb8;
+    border-radius: 8px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.reply-quote strong {
+    font-size: 11px;
+}
+
+.reply-quote span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+}
+.voice-record-btn.recording {
+    background: #ff3b5c;
+    animation: pulse 1.2s infinite;
+}
+
+.stop-square {
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 4px;
+    display: block;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 59, 92, 0.6); }
+    70% { box-shadow: 0 0 0 14px rgba(255, 59, 92, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 59, 92, 0); }
+}
+.message-bubble audio {
+    touch-action: pan-y;
     }
