@@ -141,6 +141,8 @@
         <section id="messages" class="messages">
         </section>
 
+        <div id="typingIndicator" class="typing-indicator"></div>
+
 
         <form id="messageForm" class="message-form">
 
@@ -185,16 +187,10 @@
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-window.onerror = function (msg, src, line) {
-    alert("ERROR: " + msg + " (line " + line + ")");
-};
-<script>
-window.onerror = function (msg, src, line) {
-    alert("ERROR: " + msg + " (line " + line + ")");
-};
-</script>
+window.onerror = function (m, s, l) { alert("ERROR: " + m + " (line " + l + ")"); };
 </script>
     <script src="app.js"></script>
 
 </body>
-</html>
+    </html>
+      
