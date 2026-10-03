@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+
+    <title>Private Room</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- HOME -->
+    <main id="homePage" class="page">
+
+        <div class="card">
+
+            <div class="logo">💬</div>
+
+            <h1>Private Room</h1>
+
+            <p class="subtitle">
+                A private space for your group.
+            </p>
+
+            <button id="createBtn" class="primary-btn">
+                Create Room
+            </button>
+
+            <button id="showJoinBtn" class="secondary-btn">
+                Join Existing Room
+            </button>
+
+        </div>
+
+    </main>
+
+
+    <!-- CREATE ROOM -->
+    <main id="createPage" class="page hidden">
+
+        <div class="card">
+
+            <button class="back-btn" onclick="showPage('homePage')">
+                ← Back
+            </button>
+
+            <h2>Create Private Room</h2>
+
+            <p class="subtitle">
+                Create one room for your group.
+            </p>
+
+            <input
+                id="createPassword"
+                type="password"
+                placeholder="Create password"
+            >
+
+            <button id="createRoomBtn" class="primary-btn">
+                Create Room
+            </button>
+
+            <div id="createdRoom" class="room-info hidden">
+
+                <p>Your Room Code</p>
+
+                <strong id="newRoomCode"></strong>
+
+                <p class="small">
+                    Save this code and password.
+                </p>
+
+                <button id="enterCreatedRoom" class="primary-btn">
+                    Enter Chat
+                </button>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- JOIN ROOM -->
+    <main id="joinPage" class="page hidden">
+
+        <div class="card">
+
+            <button class="back-btn" onclick="showPage('homePage')">
+                ← Back
+            </button>
+
+            <h2>Join Room</h2>
+
+            <input
+                id="roomCode"
+                type="text"
+                placeholder="Room Code"
+                maxlength="8"
+            >
+
+            <input
+                id="joinPassword"
+                type="password"
+                placeholder="Password"
+            >
+
+            <input
+                id="username"
+                type="text"
+                placeholder="Your name"
+                maxlength="20"
+            >
+
+            <button id="joinRoomBtn" class="primary-btn">
+                Join Room
+            </button>
+
+        </div>
+
+    </main>
+
+
+    <!-- CHAT -->
+    <main id="chatPage" class="chat-page hidden">
+
+        <header class="chat-header">
+
+            <div>
+                <h2>🔒 Private Room</h2>
+                <span id="roomLabel"></span>
+            </div>
+
+            <button type="button" id="leaveBtn" class="leave-btn">Leave</button>
+
+        </header>
+
+
+        <section id="messages" class="messages">
+        </section>
+
+
+        <form id="messageForm" class="message-form">
+
+  <input
+    id="messageInput"
+    type="text"
+    placeholder="Write a message..."
+    autocomplete="off"
+  >
+
+  <button
+    type="button"
+    id="voiceRecordBtn"
+    class="voice-record-btn"
+    title="Record voice"
+    aria-label="Record voice"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"></path>
+      <path d="M19 11a7 7 0 0 1-14 0"></path>
+      <path d="M12 18v4"></path>
+      <path d="M8 22h8"></path>
+    </svg>
+  </button>
+
+  <button
+    type="submit"
+    class="send-btn"
+    title="Send message"
+    aria-label="Send message"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M22 2 11 13"></path>
+      <path d="m22 2-7 20-4-9-9-4Z"></path>
+    </svg>
+  </button>
+
+</form>
+
+    </main>
+
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+window.onerror = function (msg, src, line) {
+    alert("ERROR: " + msg + " (line " + line + ")");
+};
+</script>
+    <script src="app.js"></script>
+
+</body>
+</html>
