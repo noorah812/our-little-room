@@ -5,312 +5,180 @@
 const SUPABASE_URL = "https://fyxkmzkpoykroxsjjnzm.supabase.co";
 const SUPABASE_KEY = "sb_publishable_djuZJaO1ZxDZOvMRW--5OQ_s_yCIOFo";
 
-const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentRoom = null;
 let currentUser = null;
 let realtimeChannel = null;
 
-
-// ================================
-// PAGE SYSTEM
-// ================================
-
+// ---------- PAGES ----------
 function showPage(pageId) {
-    document
-        .querySelectorAll(".page, .chat-page")
-        .forEach(page => {
-            page.classList.add("hidden");
-        });
-
-    document
-        .getElementById(pageId)
-        .classList.remove("hidden");
+    document.querySelectorAll(".page, .chat-page").forEach(page => {
+        page.classList.add("hidden");
+    });
+    document.getElementById(pageId).classList.remove("hidden");
 }
 
+document.getElementById("createBtn").addEventListener("click", () => {
+    showPage("createPage");
+});
 
-// ================================
-// HOME BUTTONS
-// ================================
+document.getElementById("showJoinBtn").addEventListener("click", () => {
+    showPage("joinPage");
+});
 
-document
-    .getElementById("createBtn")
-    .addEventListener("click", () => {
-        showPage("createPage");
-    });
+// ---------- CREATE ROOM ----------
+document.getElementById("createRoomBtn").addEventListener("click", async () => {
+    const password = document.getElementById("createPassword").value.trim();
 
+    if (!password) {
+        alert("Password enter karo.");
+        return;
+    }
 
-document
-    .getElementById("showJoinBtn")
-    .addEventListener("click", () => {
-        showPage("joinPage");
-    });
+    const roomCode = generateRoomCode();
 
-
-// ================================
-// CREATE ROOM
-// ================================
-
-document
-    .getElementById("createRoomBtn")
-    .addEventListener("click", async () => {
-
-        const password =
-            document
-                .getElementById("createPassword")
-                .value
-                .trim();
-
-        if (!password) {
-            alert("Password enter karo.");
-            return;
-        }
-
-        const roomCode = generateRoomCode();
-
-        const { data, error } =
-    await supabaseClient
-        .rpc("create_room", {
-            p_code: roomCode,
-            p_password: password
-        })
+    const { data, error } = await supabaseClient
+        .rpc("create_room", { p_code: roomCode, p_password: password })
         .single();
 
-        if (error) {
-            console.error(error);
-            alert("ERROR: " + error.message);
-            return;
-        }
+    if (error) {
+        console.error(error);
+        alert("ERROR: " + error.message);
+        return;
+    }
 
-        currentRoom = data;
+    currentRoom = data;
+    document.getElementById("newRoomCode").textContent = roomCode;
+    document.getElementById("createdRoom").classList.remove("hidden");
+});
 
-        document
-            .getElementById("newRoomCode")
-            .textContent = roomCode;
+// ---------- ENTER CREATED ROOM ----------
+document.getElementById("enterCreatedRoom").addEventListener("click", () => {
+    let username = localStorage.getItem("chatUsername");
 
-        document
-            .getElementById("createdRoom")
-            .classList.remove("hidden");
-    });
+    if (!username) {
+        username = prompt("Enter your name:");
+        if (!username) return;
+        username = username.trim();
+        if (!username) return;
+        localStorage.setItem("chatUsername", username);
+    }
 
+    currentUser = username;
+    openChat();
+});
 
-// ================================
-// ENTER CREATED ROOM
-// ================================
+// ---------- JOIN ROOM ----------
+document.getElementById("joinRoomBtn").addEventListener("click", async () => {
+    const roomCode = document.getElementById("roomCode").value.trim().toUpperCase();
+    const password = document.getElementById("joinPassword").value.trim();
+    const username = document.getElementById("username").value.trim();
 
-document
-    .getElementById("enterCreatedRoom")
-    .addEventListener("click", () => {
+    if (!roomCode || !password || !username) {
+        alert("Sab fields fill karo.");
+        return;
+    }
 
-        let username = localStorage.getItem("chatUsername");
-
-if (!username) {
-    username = prompt("Enter your name:");
-
-    if (!username) return;
-
-    username = username.trim();
-
-    if (!username) return;
-
-    localStorage.setItem("chatUsername", username);
-}
-
-currentUser = username;
-
-openChat();
-    });
-
-
-// ================================
-// JOIN ROOM
-// ================================
-
-document
-    .getElementById("joinRoomBtn")
-    .addEventListener("click", async () => {
-
-        const roomCode =
-            document
-                .getElementById("roomCode")
-                .value
-                .trim()
-                .toUpperCase();
-
-        const password =
-            document
-                .getElementById("joinPassword")
-                .value
-                .trim();
-
-        const username =
-            document
-                .getElementById("username")
-                .value
-                .trim();
-
-        if (!roomCode || !password || !username) {
-            alert("Sab fields fill karo.");
-            return;
-        }
-
-        const { data, error } =
-    await supabaseClient
-        .rpc("join_room", {
-            p_code: roomCode,
-            p_password: password
-        })
+    const { data, error } = await supabaseClient
+        .rpc("join_room", { p_code: roomCode, p_password: password })
         .maybeSingle();
 
-        if (error || !data) {
-            alert("Room not found.");
-            return;
-        }
+    if (error || !data) {
+        alert("Room not found.");
+        return;
+    }
 
-        if (data.password !== password) {
-            alert("Wrong password.");
-            return;
-        }
+    if (data.password !== password) {
+        alert("Wrong password.");
+        return;
+    }
 
-        currentRoom = data;
-currentUser = username;
-localStorage.setItem("chatUsername", username);
+    currentRoom = data;
+    currentUser = username;
+    localStorage.setItem("chatUsername", username);
 
-        openChat();
-    });
+    openChat();
+});
 
-
-// ================================
-// OPEN CHAT
-// ================================
-
+// ---------- OPEN CHAT ----------
 async function openChat() {
-
     showPage("chatPage");
-
-    document
-        .getElementById("roomLabel")
-        .textContent =
-        `Room: ${currentRoom.room_code}`;
+    document.getElementById("roomLabel").textContent = `Room: ${currentRoom.room_code}`;
 
     await loadMessages();
-markSeen();
-
+    markSeen();
     subscribeToMessages();
 }
 
-
-// ================================
-// LOAD OLD MESSAGES
-// ================================
-
+// ---------- LOAD MESSAGES ----------
 async function loadMessages() {
-
-    const { data, error } =
-        await supabaseClient
-            .from("messages")
-            .select("*")
-            .eq("room_id", currentRoom.id)
-            .order("created_at", {
-                ascending: true
-            });
+    const { data, error } = await supabaseClient
+        .from("messages")
+        .select("*")
+        .eq("room_id", currentRoom.id)
+        .order("created_at", { ascending: true });
 
     if (error) {
         console.error(error);
         return;
     }
 
-    const container =
-        document.getElementById("messages");
-
-    container.innerHTML = "";
-
-    data.forEach(message => {
-        displayMessage(message);
-    });
-
+    document.getElementById("messages").innerHTML = "";
+    data.forEach(message => displayMessage(message));
     scrollMessages();
 }
 
+// ---------- SEND MESSAGE ----------
+document.getElementById("messageForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-// ================================
-// SEND MESSAGE
-// ================================
+    const input = document.getElementById("messageInput");
+    const text = input.value.trim();
+    if (!text) return;
 
-document
-    .getElementById("messageForm")
-    .addEventListener("submit", async (event) => {
+    const { error } = await supabaseClient.from("messages").insert({
+        room_id: currentRoom.id,
+        username: currentUser,
+        message: text
+    });
 
-        event.preventDefault();
-
-        const input =
-            document.getElementById("messageInput");
-
-        const text = input.value.trim();
-        if (!text) return;
-
-        const { data, error } = await supabaseClient
-  .from("messages")
-  .insert({
-    room_id: currentRoom.id,
-    username: currentUser,
-    message: text
-  })
-  .select()
-  .single();
-
-if (error) {
-  console.error(error);
-  alert("Message could not be sent.");
-  return;
-}
-input.value = "";
-});
-
-// ================================
-// REAL-TIME MESSAGES
-// ================================
-
-function subscribeToMessages() {
-
-    if (realtimeChannel) {
-        supabaseClient.removeChannel(
-            realtimeChannel
-        );
+    if (error) {
+        console.error(error);
+        alert("Message could not be sent.");
+        return;
     }
 
-    realtimeChannel =
-        supabaseClient
-            .channel(`room-${currentRoom.id}`)
+    input.value = "";
+});
 
-            .on(
-                "postgres_changes",
-                {
-                    event: "INSERT",
-                    schema: "public",
-                    table: "messages",
-                    filter:
-                        `room_id=eq.${currentRoom.id}`
-                },
+// ---------- REALTIME ----------
+function subscribeToMessages() {
+    if (realtimeChannel) {
+        supabaseClient.removeChannel(realtimeChannel);
+    }
 
-                payload => {
-                    displayMessage(payload.new);
-scrollMessages();
-if (payload.new.username !== currentUser) markSeen();
-                }
-            )
-
-            
+    realtimeChannel = supabaseClient
+        .channel(`room-${currentRoom.id}`, {
+            config: { broadcast: { self: false } }
+        })
         .on(
             "postgres_changes",
             {
-                event: "DELETE",
+                event: "INSERT",
                 schema: "public",
-                table: "messages"
+                table: "messages",
+                filter: `room_id=eq.${currentRoom.id}`
             },
+            payload => {
+                displayMessage(payload.new);
+                scrollMessages();
+                if (payload.new.username !== currentUser) markSeen();
+            }
+        )
+        .on(
+            "postgres_changes",
+            { event: "DELETE", schema: "public", table: "messages" },
             payload => {
                 const el = document.querySelector(
                     `[data-message-id="${payload.old.id}"]`
@@ -318,7 +186,6 @@ if (payload.new.username !== currentUser) markSeen();
                 if (el) el.remove();
             }
         )
-
         .on(
             "postgres_changes",
             {
@@ -331,30 +198,33 @@ if (payload.new.username !== currentUser) markSeen();
                 const el = document.querySelector(
                     `[data-message-id="${payload.new.id}"]`
                 );
-                const tick = el && el.querySelector(".message-tick");
+                if (!el) return;
+
+                renderReactions(
+                    el.querySelector(".message-bubble"),
+                    payload.new.reactions
+                );
+
+                const tick = el.querySelector(".message-tick");
                 const list = payload.new.seen_by || [];
-                if (el) renderReactions(el.querySelector(".message-bubble"), payload.new.reactions);
                 if (tick && list.length) {
                     tick.textContent = "✓✓ Seen by " + list.join(", ");
                     tick.classList.add("seen");
                 }
             }
         )
-
+        .on("broadcast", { event: "typing" }, payload => {
+            showTyping(payload.payload.user);
+        })
         .subscribe();
 }
 
-
-// ================================
-// DISPLAY MESSAGE
-// ================================
-
+// ---------- DISPLAY MESSAGE ----------
 function displayMessage(message) {
     const container = document.getElementById("messages");
 
     const wrapper = document.createElement("div");
     wrapper.className = "message";
-
     if (message.username === currentUser) {
         wrapper.classList.add("mine");
     }
@@ -366,8 +236,6 @@ function displayMessage(message) {
     if (message.audio_url) {
         text = document.createElement("audio");
         text.controls = true;
-        text.style.pointerEvents = "auto";
-        bubble.style.cursor = "pointer";
         text.src = message.audio_url;
         text.style.maxWidth = "200px";
     } else {
@@ -381,124 +249,73 @@ function displayMessage(message) {
     time.textContent = formatTime(message.created_at);
 
     const name = document.createElement("div");
-name.className = "message-name";
-name.textContent =
-    message.username === currentUser
-        ? "You"
-        : message.username;
-name.style.fontSize = "12px";
-name.style.fontWeight = "600";
-name.style.opacity = "0.8";
-name.style.marginBottom = "2px";
+    name.className = "message-name";
+    name.textContent = message.username === currentUser ? "You" : message.username;
+    name.style.fontSize = "12px";
+    name.style.fontWeight = "600";
+    name.style.opacity = "0.8";
+    name.style.marginBottom = "2px";
 
-bubble.appendChild(name);
-bubble.appendChild(text);
-bubble.appendChild(time);
-if (message.username === currentUser) {
-    const tick = document.createElement("div");
-    const seenList = message.seen_by || [];
-    tick.className = "message-tick" + (seenList.length ? " seen" : "");
-    tick.textContent = seenList.length
-        ? "✓✓ Seen by " + seenList.join(", ")
-        : "✓";
-    bubble.appendChild(tick);
-}
+    bubble.appendChild(name);
+    bubble.appendChild(text);
+    bubble.appendChild(time);
 
+    if (message.username === currentUser) {
+        const tick = document.createElement("div");
+        const seenList = message.seen_by || [];
+        tick.className = "message-tick" + (seenList.length ? " seen" : "");
+        tick.textContent = seenList.length
+            ? "✓✓ Seen by " + seenList.join(", ")
+            : "✓";
+        bubble.appendChild(tick);
+    }
 
-attachLongPress(bubble, message, wrapper);
-renderReactions(bubble, message.reactions);
+    renderReactions(bubble, message.reactions);
+
     wrapper.dataset.messageId = message.id;
-wrapper.appendChild(bubble);
-attachLongPress(bubble, message, wrapper);
-    container.appendChild(wrapper);
+    wrapper.appendChild(bubble);
+    attachLongPress(wrapper, message, wrapper);
 
+    container.appendChild(wrapper);
     container.scrollTop = container.scrollHeight;
 }
 
-
-// ================================
-// TIME
-// ================================
-
+// ---------- HELPERS ----------
 function formatTime(date) {
-
-    return new Date(date).toLocaleTimeString(
-        [],
-        {
-            hour: "2-digit",
-            minute: "2-digit"
-        }
-    );
+    return new Date(date).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
 }
 
-
-// ================================
-// ROOM CODE
-// ================================
-
 function generateRoomCode() {
-
-    const characters =
-        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
+    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let code = "";
-
     for (let i = 0; i < 6; i++) {
-
-        code += characters[
-            Math.floor(
-                Math.random() *
-                characters.length
-            )
-        ];
+        code += characters[Math.floor(Math.random() * characters.length)];
     }
-
     return code;
 }
 
-
-// ================================
-// SCROLL
-// ================================
-
 function scrollMessages() {
-
-    const container =
-        document.getElementById("messages");
-
-    container.scrollTop =
-        container.scrollHeight;
+    const container = document.getElementById("messages");
+    container.scrollTop = container.scrollHeight;
 }
 
+// ---------- LEAVE ----------
+document.getElementById("leaveBtn").addEventListener("click", async () => {
+    if (realtimeChannel) {
+        await supabaseClient.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+    }
 
-// ================================
-// LEAVE ROOM
-// ================================
+    currentRoom = null;
+    currentUser = null;
+    document.getElementById("messages").innerHTML = "";
+    showPage("homePage");
+});
 
-document
-    .getElementById("leaveBtn")
-    .addEventListener("click", async () => {
-
-        if (realtimeChannel) {
-
-            await supabaseClient
-                .removeChannel(
-                    realtimeChannel
-                );
-
-            realtimeChannel = null;
-        }
-
-        currentRoom = null;
-        currentUser = null;
-
-        document
-            .getElementById("messages")
-            .innerHTML = "";
-
-        showPage("homePage");
-    });
-    // 🎙️ Voice Recording
+// ---------- VOICE ----------
 const voiceRecordBtn = document.getElementById("voiceRecordBtn");
 
 let mediaRecorder;
@@ -510,18 +327,19 @@ voiceRecordBtn.addEventListener("click", async () => {
     if (!isRecording) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-    audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        channelCount: 1
-    }
-});
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                    channelCount: 1
+                }
+            });
 
             const options = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-    ? { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 32000 }
-    : {};
-mediaRecorder = new MediaRecorder(stream, options);
+                ? { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 32000 }
+                : {};
+
+            mediaRecorder = new MediaRecorder(stream, options);
             audioChunks = [];
 
             mediaRecorder.ondataavailable = (event) => {
@@ -529,46 +347,51 @@ mediaRecorder = new MediaRecorder(stream, options);
             };
 
             mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, {
-                    type: "audio/webm"
-                });
-const pending = document.createElement("div");
-pending.className = "message mine";
-pending.innerHTML = '<div class="message-bubble"><div class="message-text">🎤 Sending voice...</div></div>';
-document.getElementById("messages").appendChild(pending);
-scrollMessages();
+                stream.getTracks().forEach(track => track.stop());
+
+                const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+
+                const pending = document.createElement("div");
+                pending.className = "message mine";
+                pending.innerHTML =
+                    '<div class="message-bubble"><div class="message-text">🎤 Sending voice...</div></div>';
+                document.getElementById("messages").appendChild(pending);
+                scrollMessages();
+
                 const fileName = currentRoom.id + "/" + crypto.randomUUID() + ".webm";
 
-const { error: uploadError } = await supabaseClient
-    .storage
-    .from("voice")
-    .upload(fileName, audioBlob, { contentType: "audio/webm" });
+                const { error: uploadError } = await supabaseClient
+                    .storage
+                    .from("voice")
+                    .upload(fileName, audioBlob, { contentType: "audio/webm" });
 
-if (uploadError) {
-    console.error(uploadError);
-    alert("Voice upload failed.");
-} else {
-    const { data: urlData } = supabaseClient
-        .storage
-        .from("voice")
-        .getPublicUrl(fileName);
+                if (uploadError) {
+                    console.error(uploadError);
+                    pending.remove();
+                    alert("Voice upload failed.");
+                    return;
+                }
 
-    const { error: insertError } = await supabaseClient
-        .from("messages")
-        .insert({
-            room_id: currentRoom.id,
-            username: currentUser,
-            message: "",
-            audio_url: urlData.publicUrl
-        });
+                const { data: urlData } = supabaseClient
+                    .storage
+                    .from("voice")
+                    .getPublicUrl(fileName);
 
-    if (insertError) {
-        console.error(insertError);
-        alert("Voice message could not be sent.");
-    }
-}
-setTimeout(() => pending.remove(), 400);
-                stream.getTracks().forEach(track => track.stop());
+                const { error: insertError } = await supabaseClient
+                    .from("messages")
+                    .insert({
+                        room_id: currentRoom.id,
+                        username: currentUser,
+                        message: "",
+                        audio_url: urlData.publicUrl
+                    });
+
+                pending.remove();
+
+                if (insertError) {
+                    console.error(insertError);
+                    alert("Voice message could not be sent.");
+                }
             };
 
             mediaRecorder.start();
@@ -576,12 +399,10 @@ setTimeout(() => pending.remove(), 400);
             isRecording = true;
             voiceRecordBtn.textContent = "⏹️";
             voiceRecordBtn.title = "Stop recording";
-
         } catch (error) {
             console.error("Microphone error:", error);
             alert("Microphone permission is required.");
         }
-
     } else {
         mediaRecorder.stop();
 
@@ -590,10 +411,14 @@ setTimeout(() => pending.remove(), 400);
         voiceRecordBtn.title = "Record voice";
     }
 });
+
+// ---------- SAVED NAME ----------
 const savedName = localStorage.getItem("chatUsername");
 if (savedName) {
     document.getElementById("username").value = savedName;
 }
+
+// ---------- SEEN ----------
 async function markSeen() {
     if (!currentRoom || !currentUser || document.hidden) return;
 
@@ -604,10 +429,13 @@ async function markSeen() {
 }
 
 document.addEventListener("visibilitychange", markSeen);
+
+// ---------- REACTIONS + MENU ----------
 const REACTIONS = ["😭", "😂", "😢", "👍", "🙏"];
 
 function renderReactions(bubble, reactions) {
     if (!bubble) return;
+
     let bar = bubble.querySelector(".reaction-bar");
     const entries = Object.entries(reactions || {});
 
@@ -615,6 +443,7 @@ function renderReactions(bubble, reactions) {
         if (bar) bar.remove();
         return;
     }
+
     if (!bar) {
         bar = document.createElement("div");
         bar.className = "reaction-bar";
@@ -687,6 +516,7 @@ function openMessageMenu(message, wrapper) {
                 alert("Delete failed.");
                 return;
             }
+
             wrapper.remove();
         });
         menu.appendChild(del);
@@ -703,23 +533,62 @@ function openMessageMenu(message, wrapper) {
             document.removeEventListener("pointerdown", outside);
         }
     };
+
     setTimeout(() => {
         document.addEventListener("pointerdown", outside);
     }, 300);
 }
 
-function attachLongPress(bubble, message, wrapper) {
+function attachLongPress(target, message, wrapper) {
     let timer;
     const start = () => {
         timer = setTimeout(() => openMessageMenu(message, wrapper), 600);
     };
     const cancel = () => clearTimeout(timer);
 
-    bubble.addEventListener("touchstart", start, { passive: true });
-    bubble.addEventListener("touchend", cancel);
-    bubble.addEventListener("touchmove", cancel);
-    bubble.addEventListener("mousedown", start);
-    bubble.addEventListener("mouseup", cancel);
-    bubble.addEventListener("mouseleave", cancel);
-    bubble.addEventListener("contextmenu", e => e.preventDefault());
+    target.addEventListener("touchstart", start, { passive: true });
+    target.addEventListener("touchend", cancel);
+    target.addEventListener("touchmove", cancel);
+    target.addEventListener("mousedown", start);
+    target.addEventListener("mouseup", cancel);
+    target.addEventListener("mouseleave", cancel);
+    target.addEventListener("contextmenu", e => e.preventDefault());
 }
+
+// ---------- TYPING ----------
+const typingUsers = {};
+
+function showTyping(user) {
+    clearTimeout(typingUsers[user]);
+    typingUsers[user] = setTimeout(() => {
+        delete typingUsers[user];
+        updateTyping();
+    }, 3000);
+    updateTyping();
+}
+
+function updateTyping() {
+    const el = document.getElementById("typingIndicator");
+    if (!el) return;
+
+    const names = Object.keys(typingUsers);
+    el.textContent = names.length
+        ? names.join(", ") + (names.length > 1 ? " are" : " is") + " typing..."
+        : "";
+}
+
+let lastTypingSent = 0;
+
+document.getElementById("messageInput").addEventListener("input", () => {
+    if (!realtimeChannel || !currentUser) return;
+
+    const now = Date.now();
+    if (now - lastTypingSent < 1500) return;
+    lastTypingSent = now;
+
+    realtimeChannel.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { user: currentUser }
+    });
+});
