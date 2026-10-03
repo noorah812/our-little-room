@@ -663,4 +663,38 @@ function attachSwipeReply(el, message) {
     }, { passive: true, capture: true });
 
     el.addEventListener("touchend", e => {
+        const dx = e.changedTouches[0].clientX - startX;
+
+        el.style.transition = "transform 0.2s";
+        el.style.transform = "";
+
+        setTimeout(() => {
+            el.style.transition = "";
+        }, 200);
+
+        if (moved && Math.abs(dx) > 50) {
+            startReply(message);
+        }
+    }, { capture: true });
+}
+// ---------- RECORD TIMER ----------
+let recordInterval = null;
+
+function startRecordTimer() {
+    const el = document.getElementById("typingIndicator");
+    let seconds = 0;
+    el.textContent = "🔴 Recording 0:00";
+    recordInterval = setInterval(() => {
+        seconds++;
+        const m = Math.floor(seconds / 60);
+        const s = String(seconds % 60).padStart(2, "0");
+        el.textContent = "🔴 Recording " + m + ":" + s;
+    }, 1000);
+}
+
+function stopRecordTimer() {
+    clearInterval(recordInterval);
+    recordInterval = null;
+    document.getElementById("typingIndicator").textContent = "";
+}
     
