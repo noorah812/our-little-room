@@ -197,6 +197,7 @@ async function openChat() {
         `Room: ${currentRoom.room_code}`;
 
     await loadMessages();
+markSeen();
 
     subscribeToMessages();
 }
@@ -297,7 +298,8 @@ function subscribeToMessages() {
 
                 payload => {
                     displayMessage(payload.new);
-                    scrollMessages();
+scrollMessages();
+if (payload.new.username !== currentUser) markSeen();
                 }
             )
 
@@ -314,6 +316,28 @@ function subscribeToMessages() {
                     `[data-message-id="${payload.old.id}"]`
                 );
                 if (el) el.remove();
+            }
+        )
+
+        .on(
+            "postgres_changes",
+            {
+                event: "UPDATE",
+                schema: "public",
+                table: "messages",
+                filter: `room_id=eq.${currentRoom.id}`
+            },
+            payload => {
+                const el = document.querySelector(
+                    `[data-message-id="${payload.new.id}"]`
+                );
+                const tick = el && el.querySelector(".message-tick");
+                const list = payload.new.seen_by || [];
+                if (el) renderReactions(el.querySelector(".message-bubble"), payload.new.reactions);
+                if (tick && list.length) {
+                    tick.textContent = "✓✓ Seen by " + list.join(", ");
+                    tick.classList.add("seen");
+                }
             }
         )
 
@@ -342,6 +366,8 @@ function displayMessage(message) {
     if (message.audio_url) {
         text = document.createElement("audio");
         text.controls = true;
+        text.style.pointerEvents = "auto";
+        bubble.style.cursor = "pointer";
         text.src = message.audio_url;
         text.style.maxWidth = "200px";
     } else {
@@ -368,41 +394,22 @@ name.style.marginBottom = "2px";
 bubble.appendChild(name);
 bubble.appendChild(text);
 bubble.appendChild(time);
-
 if (message.username === currentUser) {
-    const del = document.createElement("button");
-    del.type = "button";
-    del.textContent = "🗑️";
-    del.title = "Delete";
-    del.style.background = "none";
-    del.style.border = "none";
-    del.style.cursor = "pointer";
-    del.style.fontSize = "14px";
-    del.style.marginLeft = "8px";
-
-    del.addEventListener("click", async () => {
-        if (!confirm("Delete this message?")) return;
-
-        const { data, error } = await supabaseClient
-            .from("messages")
-            .delete()
-            .eq("id", message.id)
-            .select();
-
-        if (error || !data || data.length === 0) {
-            console.error(error);
-            alert("Delete failed: " + (error ? error.message : "no row deleted, id = " + message.id));
-            return;
-        }
-
-        wrapper.remove();
-    });
-
-    bubble.appendChild(del);
+    const tick = document.createElement("div");
+    const seenList = message.seen_by || [];
+    tick.className = "message-tick" + (seenList.length ? " seen" : "");
+    tick.textContent = seenList.length
+        ? "✓✓ Seen by " + seenList.join(", ")
+        : "✓";
+    bubble.appendChild(tick);
 }
 
+
+attachLongPress(bubble, message, wrapper);
+renderReactions(bubble, message.reactions);
     wrapper.dataset.messageId = message.id;
 wrapper.appendChild(bubble);
+attachLongPress(bubble, message, wrapper);
     container.appendChild(wrapper);
 
     container.scrollTop = container.scrollHeight;
@@ -512,7 +519,7 @@ voiceRecordBtn.addEventListener("click", async () => {
 });
 
             const options = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-    ? { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 128000 }
+    ? { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 32000 }
     : {};
 mediaRecorder = new MediaRecorder(stream, options);
             audioChunks = [];
@@ -525,7 +532,11 @@ mediaRecorder = new MediaRecorder(stream, options);
                 const audioBlob = new Blob(audioChunks, {
                     type: "audio/webm"
                 });
-
+const pending = document.createElement("div");
+pending.className = "message mine";
+pending.innerHTML = '<div class="message-bubble"><div class="message-text">🎤 Sending voice...</div></div>';
+document.getElementById("messages").appendChild(pending);
+scrollMessages();
                 const fileName = currentRoom.id + "/" + crypto.randomUUID() + ".webm";
 
 const { error: uploadError } = await supabaseClient
@@ -556,7 +567,7 @@ if (uploadError) {
         alert("Voice message could not be sent.");
     }
 }
-
+setTimeout(() => pending.remove(), 400);
                 stream.getTracks().forEach(track => track.stop());
             };
 
@@ -582,4 +593,133 @@ if (uploadError) {
 const savedName = localStorage.getItem("chatUsername");
 if (savedName) {
     document.getElementById("username").value = savedName;
+}
+async function markSeen() {
+    if (!currentRoom || !currentUser || document.hidden) return;
+
+    await supabaseClient.rpc("mark_seen", {
+        p_room: String(currentRoom.id),
+        p_user: currentUser
+    });
+}
+
+document.addEventListener("visibilitychange", markSeen);
+const REACTIONS = ["😭", "😂", "😢", "👍", "🙏"];
+
+function renderReactions(bubble, reactions) {
+    if (!bubble) return;
+    let bar = bubble.querySelector(".reaction-bar");
+    const entries = Object.entries(reactions || {});
+
+    if (!entries.length) {
+        if (bar) bar.remove();
+        return;
+    }
+    if (!bar) {
+        bar = document.createElement("div");
+        bar.className = "reaction-bar";
+        bubble.appendChild(bar);
+    }
+
+    const groups = {};
+    entries.forEach(([user, emoji]) => {
+        (groups[emoji] = groups[emoji] || []).push(user);
+    });
+
+    bar.innerHTML = "";
+    Object.entries(groups).forEach(([emoji, users]) => {
+        const chip = document.createElement("span");
+        chip.className = "reaction-chip";
+        chip.textContent = emoji + (users.length > 1 ? " " + users.length : "");
+        chip.addEventListener("click", () => {
+            alert(emoji + " by " + users.join(", "));
+        });
+        bar.appendChild(chip);
+    });
+}
+
+async function sendReaction(messageId, emoji) {
+    await supabaseClient.rpc("react_message", {
+        p_id: String(messageId),
+        p_user: currentUser,
+        p_emoji: emoji
+    });
+}
+
+function closeMessageMenu() {
+    const old = document.querySelector(".message-menu");
+    if (old) old.remove();
+}
+
+function openMessageMenu(message, wrapper) {
+    closeMessageMenu();
+
+    const menu = document.createElement("div");
+    menu.className = "message-menu";
+
+    REACTIONS.forEach(emoji => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = emoji;
+        b.addEventListener("click", () => {
+            sendReaction(message.id, emoji);
+            closeMessageMenu();
+        });
+        menu.appendChild(b);
+    });
+
+    if (message.username === currentUser) {
+        const del = document.createElement("button");
+        del.type = "button";
+        del.textContent = "🗑️";
+        del.addEventListener("click", async () => {
+            closeMessageMenu();
+            if (!confirm("Delete this message?")) return;
+
+            const { data, error } = await supabaseClient
+                .from("messages")
+                .delete()
+                .eq("id", message.id)
+                .select();
+
+            if (error || !data || data.length === 0) {
+                console.error(error);
+                alert("Delete failed.");
+                return;
+            }
+            wrapper.remove();
+        });
+        menu.appendChild(del);
+    }
+
+    document.body.appendChild(menu);
+
+    const rect = wrapper.getBoundingClientRect();
+    menu.style.top = Math.max(rect.top - 56, 80) + "px";
+
+    const outside = (e) => {
+        if (!menu.contains(e.target)) {
+            closeMessageMenu();
+            document.removeEventListener("pointerdown", outside);
+        }
+    };
+    setTimeout(() => {
+        document.addEventListener("pointerdown", outside);
+    }, 300);
+}
+
+function attachLongPress(bubble, message, wrapper) {
+    let timer;
+    const start = () => {
+        timer = setTimeout(() => openMessageMenu(message, wrapper), 600);
+    };
+    const cancel = () => clearTimeout(timer);
+
+    bubble.addEventListener("touchstart", start, { passive: true });
+    bubble.addEventListener("touchend", cancel);
+    bubble.addEventListener("touchmove", cancel);
+    bubble.addEventListener("mousedown", start);
+    bubble.addEventListener("mouseup", cancel);
+    bubble.addEventListener("mouseleave", cancel);
+    bubble.addEventListener("contextmenu", e => e.preventDefault());
 }
