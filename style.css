@@ -61,7 +61,7 @@ input {
 }
 
 input:focus {
-    border-color: #6c63ff;
+    border-color: #ff4f9a;
 }
 
 button {
@@ -79,7 +79,7 @@ button {
 }
 
 .primary-btn {
-    background: #6c63ff;
+    background: #ff4f9a;
     color: white;
 }
 
@@ -310,4 +310,193 @@ html, body {
 #chatPage .message-form {
     flex-shrink: 0;
     padding-bottom: env(safe-area-inset-bottom);
+}
+/* ===== CUTE PINK THEME ===== */
+body {
+    background-color: #ffe4f0 !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg opacity='0.55' font-size='28'%3E%3Ctext x='10' y='40'%3E🌸%3C/text%3E%3Ctext x='100' y='70'%3E🎀%3C/text%3E%3Ctext x='40' y='120'%3E💖%3C/text%3E%3Ctext x='125' y='160'%3E🧸%3C/text%3E%3Ctext x='5' y='170'%3E✨%3C/text%3E%3C/g%3E%3C/svg%3E") !important;
+    color: #4a2338 !important;
+}
+
+/* Cards / forms */
+.card {
+    background: #fff !important;
+    box-shadow: 0 8px 30px rgba(255, 79, 154, 0.2);
+}
+
+input {
+    background: #fff !important;
+    color: #4a2338 !important;
+    border: 1px solid #ffb3d1 !important;
+}
+
+.primary-btn {
+    background: #ff4f9a !important;
+    color: #fff !important;
+}
+
+.secondary-btn {
+    background: #ffd6e8 !important;
+    color: #b8336a !important;
+}
+
+/* Chat page */
+#chatPage .messages {
+    background: transparent !important;
+}
+
+.chat-header {
+    background: rgba(255, 255, 255, 0.7) !important;
+    color: #4a2338 !important;
+}
+
+/* My message = pink */
+.message.mine .message-bubble {
+    background: #ff4f9a !important;
+    color: #fff !important;
+}
+
+/* Other person's message = white */
+.message:not(.mine) .message-bubble {
+    background: #fff !important;
+    color: #4a2338 !important;
+}
+
+.message:not(.mine) .message-time {
+    color: #b07a94 !important;
+}
+
+/* Message bar + buttons */
+.message-form {
+    background: rgba(255, 255, 255, 0.7) !important;
+}
+
+.message-form input {
+    background: #fff !important;
+    color: #4a2338 !important;
+    border: 1px solid #ffb3d1 !important;
+}
+
+.send-btn {
+    background: #ff4f9a !important;
+    color: #fff !important;
+}
+
+#voiceRecordBtn {
+    background: #ffd6e8 !important;
+    color: #ff4f9a !important;
+}
+/* ===== ROOM CODE BOX ===== */
+#createdRoom {
+    background: #fff0f7 !important;
+    border: 2px dashed #ff8fb8 !important;
+    color: #b8336a !important;
+}
+
+#createdRoom p,
+#createdRoom span,
+#createdRoom small,
+#createdRoom div {
+    color: #b8336a !important;
+}
+
+#newRoomCode {
+    color: #ff4f9a !important;
+    letter-spacing: 6px;
+}
+/* ===== CUTE CLOUD TITLE ===== */
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+
+.cloud-title {
+    margin: 0;
+    text-align: center;
+}
+
+.cloud-title span {
+    display: inline-block;
+    font-family: 'Pacifico', cursive;
+    font-size: 22px;
+    font-weight: normal;
+    color: #ff4f9a;
+    background: #fff;
+    padding: 10px 26px;
+    border-radius: 50px;
+    box-shadow:
+        0 4px 14px rgba(255, 79, 154, 0.25),
+        -14px 6px 0 -2px #fff,
+        14px 6px 0 -2px #fff;
+}
+/* ===== TITLE BUBBLE: DARK PINK, BOLD WHITE ===== */
+.cloud-title span {
+    background: #ff4f9a !important;
+    color: #fff !important;
+    font-weight: 800 !important;
+    font-size: 22px !important;
+    border-radius: 50px !important;
+    padding: 10px 26px !important;
+    box-shadow: 0 4px 14px rgba(255, 79, 154, 0.35) !important;
+}
+.cloud-title span {
+    font-family: Arial, sans-serif !important;
+}
+.message-tick {
+    display: block;
+    font-size: 11px;
+    margin-top: 2px;
+    text-align: right;
+}
+
+.message-tick.seen {
+    color: #4fc3f7;
+    font-weight: 700;
+}
+.message.mine .message-bubble {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+.message-bubble {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.message-menu {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    background: #fff;
+    padding: 8px 10px;
+    border-radius: 30px;
+    box-shadow: 0 6px 20px rgba(255, 79, 154, 0.35);
+    z-index: 9999;
+}
+
+.message-menu button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    padding: 2px 5px;
+    cursor: pointer;
+}
+
+.reaction-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.reaction-chip {
+    background: rgba(255, 255, 255, 0.9);
+    color: #4a2338;
+    border-radius: 12px;
+    padding: 1px 7px;
+    font-size: 13px;
+    cursor: pointer;
+}
+.message-bubble audio {
+    pointer-events: none;
 }
