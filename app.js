@@ -140,7 +140,8 @@ document.getElementById("messageForm").addEventListener("submit", async (event) 
     const { error } = await supabaseClient.from("messages").insert({
         room_id: currentRoom.id,
         username: currentUser,
-        message: text
+        message: text,
+        reply_to: replyingTo
     });
 
     if (error) {
@@ -150,6 +151,7 @@ document.getElementById("messageForm").addEventListener("submit", async (event) 
     }
 
     input.value = "";
+    clearReply();
 });
 
 // ---------- REALTIME ----------
@@ -257,6 +259,23 @@ function displayMessage(message) {
     name.style.marginBottom = "2px";
 
     bubble.appendChild(name);
+
+    if (message.reply_to) {
+        const quote = document.createElement("div");
+        quote.className = "reply-quote";
+        quote.innerHTML = "<strong></strong><span></span>";
+        quote.querySelector("strong").textContent = message.reply_to.name;
+        quote.querySelector("span").textContent = message.reply_to.text;
+        quote.addEventListener("click", () => {
+            const target = document.querySelector(
+                `[data-message-id="${message.reply_to.id}"]`
+            );
+            if (target) {
+                target.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        });
+        bubble.appendChild(quote);
+    }
     bubble.appendChild(text);
     bubble.appendChild(time);
 
@@ -275,6 +294,7 @@ function displayMessage(message) {
     wrapper.dataset.messageId = message.id;
     wrapper.appendChild(bubble);
     attachLongPress(wrapper, message, wrapper);
+    attachSwipeReply(wrapper, message);
 
     container.appendChild(wrapper);
     container.scrollTop = container.scrollHeight;
@@ -397,8 +417,10 @@ voiceRecordBtn.addEventListener("click", async () => {
             mediaRecorder.start();
 
             isRecording = true;
-            voiceRecordBtn.textContent = "⏹️";
+            voiceRecordBtn.innerHTML = '<span class="stop-square"></span>';
+            voiceRecordBtn.classList.add("recording");
             voiceRecordBtn.title = "Stop recording";
+            startRecordTimer();
         } catch (error) {
             console.error("Microphone error:", error);
             alert("Microphone permission is required.");
@@ -408,7 +430,9 @@ voiceRecordBtn.addEventListener("click", async () => {
 
         isRecording = false;
         voiceRecordBtn.innerHTML = originalMicHTML;
+        voiceRecordBtn.classList.remove("recording");
         voiceRecordBtn.title = "Record voice";
+        stopRecordTimer();
     }
 });
 
@@ -592,3 +616,51 @@ document.getElementById("messageInput").addEventListener("input", () => {
         payload: { user: currentUser }
     });
 });
+// ---------- REPLY ----------
+let replyingTo = null;
+
+function startReply(message) {
+    replyingTo = {
+        id: message.id,
+        name: message.username === currentUser ? "You" : message.username,
+        text: message.audio_url ? "🎤 Voice message" : (message.message || "").slice(0, 80)
+    };
+    document.getElementById("replyBarName").textContent = replyingTo.name;
+    document.getElementById("replyBarMsg").textContent = replyingTo.text;
+    document.getElementById("replyBar").classList.remove("hidden");
+    document.getElementById("messageInput").focus();
+}
+
+function clearReply() {
+    replyingTo = null;
+    document.getElementById("replyBar").classList.add("hidden");
+}
+
+document.getElementById("replyCancel").addEventListener("click", clearReply);
+
+function attachSwipeReply(el, message) {
+    let startX = 0;
+    let startY = 0;
+    let moved = false;
+
+    el.addEventListener("touchstart", e => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        moved = false;
+    }, { passive: true, capture: true });
+
+    el.addEventListener("touchmove", e => {
+        const dx = e.touches[0].clientX - startX;
+        const dy = Math.abs(e.touches[0].clientY - startY);
+
+        if (dy > 30) return;
+
+        if (Math.abs(dx) > 10) {
+            moved = true;
+            const shift = Math.max(-60, Math.min(60, dx));
+            el.style.transform = `translateX(${shift}px)`;
+        }
+    }, { passive: true, capture: true });
+
+    el.addEventListener("touchend", e => {
+    
