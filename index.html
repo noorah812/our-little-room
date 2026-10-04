@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-
     <title>Private Room</title>
-
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -13,218 +11,129 @@
 
     <!-- HOME -->
     <main id="homePage" class="page">
-
         <div class="card">
-
             <div class="logo">💬</div>
-
             <h1>Private Room</h1>
-
-            <p class="subtitle">
-                A private space for your group.
-            </p>
-
-            <button id="createBtn" class="primary-btn">
-                Create Room
-            </button>
-
-            <button id="showJoinBtn" class="secondary-btn">
-                Join Existing Room
-            </button>
-
+            <p class="subtitle">A private space for your group.</p>
+            <button id="createBtn" class="primary-btn">Create Room</button>
+            <button id="showJoinBtn" class="secondary-btn">Join Existing Room</button>
         </div>
-
     </main>
-
 
     <!-- CREATE ROOM -->
     <main id="createPage" class="page hidden">
-
         <div class="card">
-
-            <button class="back-btn" onclick="showPage('homePage')">
-                ← Back
-            </button>
-
+            <button class="back-btn" onclick="showPage('homePage')">← Back</button>
             <h2>Create Private Room</h2>
-
-            <p class="subtitle">
-                Create one room for your group.
-            </p>
-
-            <input
-                id="createPassword"
-                type="password"
-                placeholder="Create password"
-            >
-
-            <button id="createRoomBtn" class="primary-btn">
-                Create Room
-            </button>
+            <p class="subtitle">Create one room for your group.</p>
+            <input id="createPassword" type="password" placeholder="Create password">
+            <button id="createRoomBtn" class="primary-btn">Create Room</button>
 
             <div id="createdRoom" class="room-info hidden">
-
                 <p>Your Room Code</p>
-
                 <strong id="newRoomCode"></strong>
-
-                <p class="small">
-                    Save this code and password.
-                </p>
-
-                <button id="enterCreatedRoom" class="primary-btn">
-                    Enter Chat
-                </button>
-
+                <p class="small">Save this code and password.</p>
+                <button id="enterCreatedRoom" class="primary-btn">Enter Chat</button>
             </div>
-
         </div>
-
     </main>
-
 
     <!-- JOIN ROOM -->
     <main id="joinPage" class="page hidden">
-
         <div class="card">
-
-            <button class="back-btn" onclick="showPage('homePage')">
-                ← Back
-            </button>
-
+            <button class="back-btn" onclick="showPage('homePage')">← Back</button>
             <h2>Join Room</h2>
-
-            <input
-                id="roomCode"
-                type="text"
-                placeholder="Room Code"
-                maxlength="8"
-            >
-
-            <input
-                id="joinPassword"
-                type="password"
-                placeholder="Password"
-            >
-
-            <input
-                id="username"
-                type="text"
-                placeholder="Your name"
-                maxlength="20"
-            >
-
-            <button id="joinRoomBtn" class="primary-btn">
-                Join Room
-            </button>
-
+            <input id="roomCode" type="text" placeholder="Room Code" maxlength="8">
+            <input id="joinPassword" type="password" placeholder="Password">
+            <input id="username" type="text" placeholder="Your name" maxlength="20">
+            <button id="joinRoomBtn" class="primary-btn">Join Room</button>
         </div>
-
     </main>
-
 
     <!-- CHAT -->
     <main id="chatPage" class="chat-page hidden">
 
-        <<header class="chat-header">
-    <button type="button" id="leaveBtn" class="hdr-btn" title="Leave">
-        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></svg>
-    </button>
+        <header class="chat-header">
+            <button type="button" id="leaveBtn" class="hdr-btn" title="Leave">
+                <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></svg>
+            </button>
 
-    <div class="hdr-info" id="headerInfo">
-        <div id="roomAvatar" class="room-avatar">💬</div>
-        <div class="hdr-text">
-            <strong id="roomName">Private Room</strong>
-            <span id="roomLabel"></span>
-        </div>
-    </div>
+            <div class="hdr-info" id="headerInfo">
+                <div id="roomAvatar" class="room-avatar">💬</div>
+                <div class="hdr-text">
+                    <strong id="roomName">Private Room</strong>
+                    <span id="roomLabel"></span>
+                </div>
+            </div>
 
-    <button type="button" id="callBtn" class="hdr-btn" title="Call">
-        <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"></path></svg>
-    </button>
-    <button type="button" id="videoBtn" class="hdr-btn" title="Video call">
-        <svg viewBox="0 0 24 24"><rect x="3" y="6" width="12" height="12" rx="2"></rect><path d="M15 10l6-3v10l-6-3z"></path></svg>
-    </button>
-    <button type="button" id="editRoomBtn" class="hdr-btn" title="Edit room">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
-    </button>
-</header>
+            <button type="button" id="callBtn" class="hdr-btn" title="Call">
+                <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"></path></svg>
+            </button>
+            <button type="button" id="videoBtn" class="hdr-btn" title="Video call">
+                <svg viewBox="0 0 24 24"><rect x="3" y="6" width="12" height="12" rx="2"></rect><path d="M15 10l6-3v10l-6-3z"></path></svg>
+            </button>
+            <button type="button" id="editRoomBtn" class="hdr-btn" title="Edit room">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+            </button>
+        </header>
 
-
-        <section id="messages" class="messages">
-        </section>
+        <section id="messages" class="messages"></section>
 
         <div id="typingIndicator" class="typing-indicator"></div>
-<div id="replyBar" class="reply-bar hidden">
-    <div class="reply-bar-text">
-        <strong id="replyBarName"></strong>
-        <span id="replyBarMsg"></span>
-    </div>
-    <button type="button" id="replyCancel">✕</button>
-</div>
+
+        <div id="replyBar" class="reply-bar hidden">
+            <div class="reply-bar-text">
+                <strong id="replyBarName"></strong>
+                <span id="replyBarMsg"></span>
+            </div>
+            <button type="button" id="replyCancel">✕</button>
+        </div>
 
         <form id="messageForm" class="message-form">
+            <input id="messageInput" type="text" placeholder="Write a message..." autocomplete="off">
 
-  <input
-    id="messageInput"
-    type="text"
-    placeholder="Write a message..."
-    autocomplete="off"
-  >
-<button type="button" id="attachBtn" class="attach-btn" title="Photo or video" aria-label="Photo or video">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="9" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
-  </button>
-  <input type="file" id="mediaFile" accept="image/*,video/*" hidden>
-  <button
-    type="button"
-    id="voiceRecordBtn"
-    class="voice-record-btn"
-    title="Record voice"
-    aria-label="Record voice"
-  >
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"></path>
-      <path d="M19 11a7 7 0 0 1-14 0"></path>
-      <path d="M12 18v4"></path>
-      <path d="M8 22h8"></path>
-    </svg>
-  </button>
+            <button type="button" id="attachBtn" class="attach-btn" title="Photo or video" aria-label="Photo or video">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="9" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
+            </button>
+            <input type="file" id="mediaFile" accept="image/*,video/*" hidden>
 
-  <button
-  type="submit"
-  class="send-btn"
-  aria-label="Send message"
->
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M21 3L10.5 13.5"></path>
-    <path d="M21 3L15 21L10.5 13.5L3 9L21 3Z"></path>
-  </svg>
-</button>
+            <button type="button" id="voiceRecordBtn" class="voice-record-btn" title="Record voice" aria-label="Record voice">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"></path>
+                    <path d="M19 11a7 7 0 0 1-14 0"></path>
+                    <path d="M12 18v4"></path>
+                    <path d="M8 22h8"></path>
+                </svg>
+            </button>
 
-</form>
+            <button type="submit" class="send-btn" aria-label="Send message">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M21 3L10.5 13.5"></path>
+                    <path d="M21 3L15 21L10.5 13.5L3 9L21 3Z"></path>
+                </svg>
+            </button>
+        </form>
 
     </main>
 
-<div id="editRoomModal" class="modal hidden">
-    <div class="modal-card">
-        <h3>Room details</h3>
-        <div id="editAvatarPreview" class="room-avatar big">💬</div>
-        <label class="pick-btn">
-            Change photo
-            <input type="file" id="avatarFile" accept="image/*" hidden>
-        </label>
-        <input id="roomNameInput" type="text" maxlength="30" placeholder="Room name">
-        <button type="button" id="saveRoomBtn" class="primary-btn">Save</button>
-        <button type="button" id="cancelRoomBtn" class="secondary-btn">Cancel</button>
+    <!-- ROOM DETAILS POPUP -->
+    <div id="editRoomModal" class="modal hidden">
+        <div class="modal-card">
+            <h3>Room details</h3>
+            <div id="editAvatarPreview" class="room-avatar big">💬</div>
+            <label class="pick-btn">
+                Change photo
+                <input type="file" id="avatarFile" accept="image/*" hidden>
+            </label>
+            <input id="roomNameInput" type="text" maxlength="30" placeholder="Room name">
+            <button type="button" id="saveRoomBtn" class="primary-btn">Save</button>
+            <button type="button" id="cancelRoomBtn" class="secondary-btn">Cancel</button>
+        </div>
     </div>
-</div>
+
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-window.onerror = function (m, s, l) { alert("ERROR: " + m + " (line " + l + ")"); };
-</script>
     <script src="app.js"></script>
 
 </body>
-    </html>
-    
+        </html>
