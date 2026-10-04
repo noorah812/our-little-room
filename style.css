@@ -439,4 +439,178 @@ button {
 }
 .message-bubble audio {
     touch-action: pan-y;
+}
+img.ios-emoji {
+    width: 1.2em;
+    height: 1.2em;
+    vertical-align: -0.2em;
+    display: inline-block;
+    pointer-events: none;
+}
+.chat-header {
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 10px;
+    background: #fff !important;
+    border-bottom: 1px solid #ffd6e8;
+}
+
+.hdr-btn {
+    background: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ff4f9a;
+    flex-shrink: 0;
+}
+
+.hdr-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.hdr-btn:active {
+    background: #ffe4f0;
+}
+
+.hdr-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.room-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #ffd6e8 center / cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.room-avatar.big {
+    width: 90px;
+    height: 90px;
+    font-size: 44px;
+    margin: 0 auto 10px;
+}
+
+.hdr-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.hdr-text strong {
+    font-size: 16px;
+    color: #4a2338;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hdr-text span {
+    font-size: 12px;
+    color: #b07a94;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(74, 35, 56, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.modal-card {
+    width: 100%;
+    max-width: 340px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    text-align: center;
+}
+
+.modal-card h3 {
+    margin-bottom: 14px;
+    color: #4a2338;
+}
+
+.pick-btn {
+    display: inline-block;
+    color: #ff4f9a;
+    font-weight: 600;
+    margin-bottom: 14px;
+    cursor: pointer;
+}
+.message-form {
+    gap: 6px;
+    padding: 6px 8px;
+}
+
+.message-form input {
+    padding: 11px 14px;
+    margin-bottom: 0;
+}
+
+.voice-record-btn,
+.send-btn,
+.attach-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.voice-record-btn svg,
+.send-btn svg,
+.attach-btn svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.attach-btn {
+    background: #ffd6e8;
+    color: #ff4f9a;
+}
+
+.stop-square {
+    width: 13px;
+    height: 13px;
+}
+
+.message-media {
+    display: block;
+    max-width: 100%;
+    width: 220px;
+    max-height: 300px;
+    object-fit: cover;
+    border-radius: 12px;
     }
