@@ -5,166 +5,298 @@
 const SUPABASE_URL = "https://fyxkmzkpoykroxsjjnzm.supabase.co";
 const SUPABASE_KEY = "sb_publishable_djuZJaO1ZxDZOvMRW--5OQ_s_yCIOFo";
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
 
 let currentRoom = null;
 let currentUser = null;
 let realtimeChannel = null;
 
-// ---------- PAGES ----------
+
+// ======================================================
+// SAFE ELEMENT HELPER
+// ======================================================
+
+function $(id) {
+    return document.getElementById(id);
+}
+
+
+// ======================================================
+// PAGES
+// ======================================================
+
 function showPage(pageId) {
     document.querySelectorAll(".page, .chat-page").forEach(page => {
         page.classList.add("hidden");
     });
-    document.getElementById(pageId).classList.remove("hidden");
+
+    const page = $(pageId);
+
+    if (page) {
+        page.classList.remove("hidden");
+    }
 }
 
-document.getElementById("createBtn").addEventListener("click", () => {
-    showPage("createPage");
-});
 
-document.getElementById("showJoinBtn").addEventListener("click", () => {
-    showPage("joinPage");
-});
+if ($("createBtn")) {
+    $("createBtn").addEventListener("click", () => {
+        showPage("createPage");
+    });
+}
 
-// ---------- CREATE ROOM ----------
-document.getElementById("createRoomBtn").addEventListener("click", async () => {
-    const password = document.getElementById("createPassword").value.trim();
+if ($("showJoinBtn")) {
+    $("showJoinBtn").addEventListener("click", () => {
+        showPage("joinPage");
+    });
+}
 
-    if (!password) {
-        alert("Password enter karo.");
-        return;
-    }
 
-    const roomCode = generateRoomCode();
+// ======================================================
+// CREATE ROOM
+// ======================================================
 
-    const { data, error } = await supabaseClient
-        .rpc("create_room", { p_code: roomCode, p_password: password })
-        .single();
+if ($("createRoomBtn")) {
+    $("createRoomBtn").addEventListener("click", async () => {
 
-    if (error) {
-        console.error(error);
-        alert("ERROR: " + error.message);
-        return;
-    }
+        const password = $("createPassword")?.value.trim();
 
-    currentRoom = data;
-    document.getElementById("newRoomCode").textContent = roomCode;
-    document.getElementById("createdRoom").classList.remove("hidden");
-});
+        if (!password) {
+            alert("Password enter karo.");
+            return;
+        }
 
-// ---------- ENTER CREATED ROOM ----------
-document.getElementById("enterCreatedRoom").addEventListener("click", () => {
-    let username = localStorage.getItem("chatUsername");
+        const roomCode = generateRoomCode();
 
-    if (!username) {
-        username = prompt("Enter your name:");
-        if (!username) return;
-        username = username.trim();
-        if (!username) return;
+        const { data, error } = await supabaseClient
+            .rpc("create_room", {
+                p_code: roomCode,
+                p_password: password
+            })
+            .single();
+
+        if (error) {
+            console.error(error);
+            alert("ERROR: " + error.message);
+            return;
+        }
+
+        currentRoom = data;
+
+        if ($("newRoomCode")) {
+            $("newRoomCode").textContent = roomCode;
+        }
+
+        if ($("createdRoom")) {
+            $("createdRoom").classList.remove("hidden");
+        }
+    });
+}
+
+
+// ======================================================
+// ENTER CREATED ROOM
+// ======================================================
+
+if ($("enterCreatedRoom")) {
+    $("enterCreatedRoom").addEventListener("click", () => {
+
+        let username = localStorage.getItem("chatUsername");
+
+        if (!username) {
+
+            username = prompt("Enter your name:");
+
+            if (!username) return;
+
+            username = username.trim();
+
+            if (!username) return;
+
+            localStorage.setItem("chatUsername", username);
+        }
+
+        currentUser = username;
+
+        openChat();
+    });
+}
+
+
+// ======================================================
+// JOIN ROOM
+// ======================================================
+
+if ($("joinRoomBtn")) {
+    $("joinRoomBtn").addEventListener("click", async () => {
+
+        const roomCode = $("roomCode")?.value.trim().toUpperCase();
+        const password = $("joinPassword")?.value.trim();
+        const username = $("username")?.value.trim();
+
+        if (!roomCode || !password || !username) {
+            alert("Sab fields fill karo.");
+            return;
+        }
+
+        const { data, error } = await supabaseClient
+            .rpc("join_room", {
+                p_code: roomCode,
+                p_password: password
+            })
+            .maybeSingle();
+
+        if (error || !data) {
+            console.error(error);
+            alert("Room not found.");
+            return;
+        }
+
+        if (data.password !== password) {
+            alert("Wrong password.");
+            return;
+        }
+
+        currentRoom = data;
+        currentUser = username;
+
         localStorage.setItem("chatUsername", username);
-    }
 
-    currentUser = username;
-    openChat();
-});
+        openChat();
+    });
+}
 
-// ---------- JOIN ROOM ----------
-document.getElementById("joinRoomBtn").addEventListener("click", async () => {
-    const roomCode = document.getElementById("roomCode").value.trim().toUpperCase();
-    const password = document.getElementById("joinPassword").value.trim();
-    const username = document.getElementById("username").value.trim();
 
-    if (!roomCode || !password || !username) {
-        alert("Sab fields fill karo.");
-        return;
-    }
+// ======================================================
+// OPEN CHAT
+// ======================================================
 
-    const { data, error } = await supabaseClient
-        .rpc("join_room", { p_code: roomCode, p_password: password })
-        .maybeSingle();
-
-    if (error || !data) {
-        alert("Room not found.");
-        return;
-    }
-
-    if (data.password !== password) {
-        alert("Wrong password.");
-        return;
-    }
-
-    currentRoom = data;
-    currentUser = username;
-    localStorage.setItem("chatUsername", username);
-
-    openChat();
-});
-
-// ---------- OPEN CHAT ----------
 async function openChat() {
+
+    if (!currentRoom || !currentUser) {
+        return;
+    }
+
     showPage("chatPage");
+
     applyRoomHeader();
-    document.getElementById("roomLabel").textContent = `Room: ${currentRoom.room_code}`;
+
+    if ($("roomLabel")) {
+        $("roomLabel").textContent =
+            `Room: ${currentRoom.room_code}`;
+    }
 
     await loadMessages();
-    markSeen();
+
+    await markSeen();
+
     subscribeToMessages();
 }
 
-// ---------- LOAD MESSAGES ----------
+
+// ======================================================
+// LOAD MESSAGES
+// ======================================================
+
 async function loadMessages() {
+
+    if (!currentRoom) return;
+
     const { data, error } = await supabaseClient
         .from("messages")
         .select("*")
         .eq("room_id", currentRoom.id)
-        .order("created_at", { ascending: true });
+        .order("created_at", {
+            ascending: true
+        });
 
     if (error) {
         console.error(error);
         return;
     }
 
-    document.getElementById("messages").innerHTML = "";
-    data.forEach(message => displayMessage(message));
+    const container = $("messages");
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    (data || []).forEach(message => {
+        displayMessage(message);
+    });
+
     scrollMessages();
 }
 
-// ---------- SEND MESSAGE ----------
-document.getElementById("messageForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
 
-    const input = document.getElementById("messageInput");
-    const text = input.value.trim();
-    if (!text) return;
+// ======================================================
+// SEND MESSAGE
+// ======================================================
 
-    const { error } = await supabaseClient.from("messages").insert({
-        room_id: currentRoom.id,
-        username: currentUser,
-        message: text,
-        reply_to: replyingTo
+if ($("messageForm")) {
+    $("messageForm").addEventListener("submit", async event => {
+
+        event.preventDefault();
+
+        if (!currentRoom || !currentUser) {
+            return;
+        }
+
+        const input = $("messageInput");
+
+        if (!input) return;
+
+        const text = input.value.trim();
+
+        if (!text) return;
+
+        const { error } = await supabaseClient
+            .from("messages")
+            .insert({
+                room_id: currentRoom.id,
+                username: currentUser,
+                message: text,
+                reply_to: replyingTo
+            });
+
+        if (error) {
+            console.error(error);
+            alert("Message could not be sent.");
+            return;
+        }
+
+        input.value = "";
+
+        clearReply();
     });
+}
 
-    if (error) {
-        console.error(error);
-        alert("Message could not be sent.");
-        return;
-    }
 
-    input.value = "";
-    clearReply();
-});
+// ======================================================
+// REALTIME
+// ======================================================
 
-// ---------- REALTIME ----------
 function subscribeToMessages() {
+
+    if (!currentRoom) return;
+
     if (realtimeChannel) {
         supabaseClient.removeChannel(realtimeChannel);
+        realtimeChannel = null;
     }
 
     realtimeChannel = supabaseClient
         .channel(`room-${currentRoom.id}`, {
-            config: { broadcast: { self: false } }
+            config: {
+                broadcast: {
+                    self: false
+                }
+            }
         })
+
+        // INSERT
         .on(
             "postgres_changes",
             {
@@ -174,22 +306,42 @@ function subscribeToMessages() {
                 filter: `room_id=eq.${currentRoom.id}`
             },
             payload => {
+
                 if (!currentRoom) return;
+
                 displayMessage(payload.new);
+
                 scrollMessages();
-                if (payload.new.username !== currentUser) markSeen();
+
+                if (
+                    payload.new.username !== currentUser
+                ) {
+                    markSeen();
+                }
             }
         )
+
+        // DELETE
         .on(
             "postgres_changes",
-            { event: "DELETE", schema: "public", table: "messages" },
+            {
+                event: "DELETE",
+                schema: "public",
+                table: "messages"
+            },
             payload => {
+
                 const el = document.querySelector(
                     `[data-message-id="${payload.old.id}"]`
                 );
-                if (el) el.remove();
+
+                if (el) {
+                    el.remove();
+                }
             }
         )
+
+        // UPDATE
         .on(
             "postgres_changes",
             {
@@ -199,81 +351,130 @@ function subscribeToMessages() {
                 filter: `room_id=eq.${currentRoom.id}`
             },
             payload => {
+
                 const el = document.querySelector(
                     `[data-message-id="${payload.new.id}"]`
                 );
+
                 if (!el) return;
 
-                renderReactions(
-                    el.querySelector(".message-bubble"),
-                    payload.new.reactions
-                );
+                const bubble =
+                    el.querySelector(".message-bubble");
 
-                const tick = el.querySelector(".message-tick");
-                const list = payload.new.seen_by || [];
+                if (bubble) {
+                    renderReactions(
+                        bubble,
+                        payload.new.reactions
+                    );
+                }
+
+                const tick =
+                    el.querySelector(".message-tick");
+
+                const list =
+                    payload.new.seen_by || [];
+
                 if (tick && list.length) {
-                    tick.textContent = "✓✓ Seen by " + list.join(", ");
+
+                    tick.textContent =
+                        "✓✓ Seen by " + list.join(", ");
+
                     tick.classList.add("seen");
                 }
             }
         )
-        .on("broadcast", { event: "roomupdate" }, payload => {
-            currentRoom.room_name = payload.payload.name;
-            if (payload.payload.avatar) {
-                currentRoom.room_avatar = payload.payload.avatar;
+
+        // ROOM UPDATE
+        .on(
+            "broadcast",
+            {
+                event: "roomupdate"
+            },
+            payload => {
+
+                if (!currentRoom) return;
+
+                currentRoom.room_name =
+                    payload.payload?.name || null;
+
+                if (payload.payload?.avatar) {
+                    currentRoom.room_avatar =
+                        payload.payload.avatar;
+                }
+
+                applyRoomHeader();
             }
-            applyRoomHeader();
-        })
-        .on("broadcast", { event: "typing" }, payload => {
-            showTyping(payload.payload.user);
-        })
+        )
+
+        // TYPING
+        .on(
+            "broadcast",
+            {
+                event: "typing"
+            },
+            payload => {
+
+                if (payload.payload?.user) {
+                    showTyping(
+                        payload.payload.user
+                    );
+                }
+            }
+        )
+
         .subscribe();
 }
 
-    
 
-// ---------- DISPLAY MESSAGE ----------
+// ======================================================
+// DISPLAY MESSAGE
+// ======================================================
+
 function displayMessage(message) {
-    const container = document.getElementById("messages");
 
-    const wrapper = document.createElement("div");
+    const container = $("messages");
+
+    if (!container || !message) return;
+
+    // Avoid duplicate messages
+    if (
+        message.id &&
+        document.querySelector(
+            `[data-message-id="${message.id}"]`
+        )
+    ) {
+        return;
+    }
+
+    const wrapper =
+        document.createElement("div");
+
     wrapper.className = "message";
+
     if (message.username === currentUser) {
         wrapper.classList.add("mine");
     }
 
-    const bubble = document.createElement("div");
+    const bubble =
+        document.createElement("div");
+
     bubble.className = "message-bubble";
 
-    let text;
-    if (message.media_url) {
-        if (message.media_type === "video") {
-            text = document.createElement("video");
-            text.controls = true;
-            text.preload = "metadata";
-        } else {
-            text = document.createElement("img");
-        }
-        text.src = message.media_url;
-        text.className = "message-media";
-    } else if (message.audio_url) {
-        text = document.createElement("audio");
-        text.controls = true;
-        text.src = message.audio_url;
-        text.style.maxWidth = "200px";
-    } else {
-        text = document.createElement("div");
-        text.className = "message-text";
-        text.textContent = message.message;
-    }
 
-    const time = document.createElement("span");
-    time.className = "message-time";
-    time.textContent = formatTime(message.created_at);
+    // ==================================================
+    // USERNAME
+    // ==================================================
 
-    const name = document.createElement("div");
+    const name =
+        document.createElement("div");
+
     name.className = "message-name";
-    name.textContent = message.username === currentUser ? "You" : message.username;
+
+    name.textContent =
+        message.username === currentUser
+            ? "You"
+            : message.username;
+
     name.style.fontSize = "12px";
     name.style.fontWeight = "600";
     name.style.opacity = "0.8";
@@ -281,705 +482,1570 @@ function displayMessage(message) {
 
     bubble.appendChild(name);
 
+
+    // ==================================================
+    // REPLY QUOTE
+    // ==================================================
+
     if (message.reply_to) {
-        const quote = document.createElement("div");
+
+        const quote =
+            document.createElement("div");
+
         quote.className = "reply-quote";
-        quote.innerHTML = "<strong></strong><span></span>";
-        quote.querySelector("strong").textContent = message.reply_to.name;
-        quote.querySelector("span").textContent = message.reply_to.text;
+
+        quote.innerHTML =
+            "<strong></strong><span></span>";
+
+        quote.querySelector("strong").textContent =
+            message.reply_to.name || "";
+
+        quote.querySelector("span").textContent =
+            message.reply_to.text || "";
+
         quote.addEventListener("click", () => {
-            const target = document.querySelector(
-                `[data-message-id="${message.reply_to.id}"]`
-            );
+
+            const target =
+                document.querySelector(
+                    `[data-message-id="${message.reply_to.id}"]`
+                );
+
             if (target) {
-                target.scrollIntoView({ behavior: "smooth", block: "center" });
+                target.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
             }
         });
+
         bubble.appendChild(quote);
     }
-    bubble.appendChild(text);
+
+
+    // ==================================================
+    // CONTENT
+    // ==================================================
+
+    let content = null;
+
+
+    // ---------- STICKER ----------
+
+    if (
+        message.media_url &&
+        message.media_type === "sticker"
+    ) {
+
+        content =
+            document.createElement("img");
+
+        content.src = message.media_url;
+
+        content.className =
+            "message-sticker";
+
+        content.alt = "Sticker";
+
+        content.style.maxWidth = "160px";
+        content.style.maxHeight = "160px";
+        content.style.width = "auto";
+        content.style.height = "auto";
+        content.style.objectFit = "contain";
+        content.style.display = "block";
+    }
+
+
+    // ---------- VIDEO ----------
+
+    else if (
+        message.media_url &&
+        message.media_type === "video"
+    ) {
+
+        content =
+            document.createElement("video");
+
+        content.controls = true;
+        content.preload = "metadata";
+        content.src = message.media_url;
+        content.className = "message-media";
+    }
+
+
+    // ---------- IMAGE ----------
+
+    else if (message.media_url) {
+
+        content =
+            document.createElement("img");
+
+        content.src = message.media_url;
+
+        content.className =
+            "message-media";
+
+        content.alt = "Image";
+
+        content.loading = "lazy";
+    }
+
+
+    // ---------- VOICE ----------
+
+    else if (message.audio_url) {
+
+        content =
+            document.createElement("audio");
+
+        content.controls = true;
+
+        content.preload = "metadata";
+
+        content.src = message.audio_url;
+
+        content.style.maxWidth = "200px";
+    }
+
+
+    // ---------- TEXT ----------
+
+    else {
+
+        content =
+            document.createElement("div");
+
+        content.className =
+            "message-text";
+
+        content.textContent =
+            message.message || "";
+    }
+
+
+    if (content) {
+        bubble.appendChild(content);
+    }
+
+
+    // ==================================================
+    // TIME
+    // ==================================================
+
+    const time =
+        document.createElement("span");
+
+    time.className =
+        "message-time";
+
+    time.textContent =
+        formatTime(message.created_at);
+
     bubble.appendChild(time);
 
+
+    // ==================================================
+    // SEEN TICK
+    // ==================================================
+
     if (message.username === currentUser) {
-        const tick = document.createElement("div");
-        const seenList = message.seen_by || [];
-        tick.className = "message-tick" + (seenList.length ? " seen" : "");
-        tick.textContent = seenList.length
-            ? "✓✓ Seen by " + seenList.join(", ")
-            : "✓";
+
+        const tick =
+            document.createElement("div");
+
+        const seenList =
+            message.seen_by || [];
+
+        tick.className =
+            "message-tick" +
+            (seenList.length ? " seen" : "");
+
+        tick.textContent =
+            seenList.length
+                ? "✓✓ Seen by " + seenList.join(", ")
+                : "✓";
+
         bubble.appendChild(tick);
     }
 
-    renderReactions(bubble, message.reactions);
 
-    wrapper.dataset.messageId = message.id;
+    // ==================================================
+    // REACTIONS
+    // ==================================================
+
+    renderReactions(
+        bubble,
+        message.reactions
+    );
+
+
+    // ==================================================
+    // APPEND
+    // ==================================================
+
+    if (message.id) {
+        wrapper.dataset.messageId =
+            message.id;
+    }
+
     wrapper.appendChild(bubble);
-    attachLongPress(wrapper, message, wrapper);
-    attachSwipeReply(wrapper, message);
+
+    attachLongPress(
+        wrapper,
+        message,
+        wrapper
+    );
+
+    attachSwipeReply(
+        wrapper,
+        message
+    );
 
     container.appendChild(wrapper);
-    container.scrollTop = container.scrollHeight;
+
+    container.scrollTop =
+        container.scrollHeight;
 }
 
-// ---------- HELPERS ----------
+
+// ======================================================
+// HELPERS
+// ======================================================
+
 function formatTime(date) {
-    return new Date(date).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-    });
+
+    if (!date) return "";
+
+    return new Date(date).toLocaleTimeString(
+        [],
+        {
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
 }
+
 
 function generateRoomCode() {
-    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    const characters =
+        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
     let code = "";
+
     for (let i = 0; i < 6; i++) {
-        code += characters[Math.floor(Math.random() * characters.length)];
+
+        code +=
+            characters[
+                Math.floor(
+                    Math.random() *
+                    characters.length
+                )
+            ];
     }
+
     return code;
 }
 
+
 function scrollMessages() {
-    const container = document.getElementById("messages");
-    container.scrollTop = container.scrollHeight;
+
+    const container = $("messages");
+
+    if (!container) return;
+
+    container.scrollTop =
+        container.scrollHeight;
 }
 
-// ---------- LEAVE ----------
-document.getElementById("leaveBtn").addEventListener("click", async () => {
-    if (realtimeChannel) {
-        await supabaseClient.removeChannel(realtimeChannel);
-        realtimeChannel = null;
-    }
 
-    currentRoom = null;
-    currentUser = null;
-    document.getElementById("messages").innerHTML = "";
-    showPage("homePage");
-});
+// ======================================================
+// LEAVE
+// ======================================================
 
-// ---------- VOICE ----------
-const voiceRecordBtn = document.getElementById("voiceRecordBtn");
+if ($("leaveBtn")) {
 
-let mediaRecorder;
+    $("leaveBtn").addEventListener(
+        "click",
+        async () => {
+
+            if (realtimeChannel) {
+
+                await supabaseClient
+                    .removeChannel(
+                        realtimeChannel
+                    );
+
+                realtimeChannel = null;
+            }
+
+            currentRoom = null;
+            currentUser = null;
+
+            if ($("messages")) {
+                $("messages").innerHTML = "";
+            }
+
+            showPage("homePage");
+        }
+    );
+}
+
+
+// ======================================================
+// VOICE RECORDING
+// ======================================================
+
+const voiceRecordBtn =
+    $("voiceRecordBtn");
+
+let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
-const originalMicHTML = voiceRecordBtn.innerHTML;
 
-voiceRecordBtn.addEventListener("click", async () => {
-    if (!isRecording) {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true,
-                    channelCount: 1
-                }
-            });
+const originalMicHTML =
+    voiceRecordBtn
+        ? voiceRecordBtn.innerHTML
+        : "";
 
-            const options = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-                ? { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 32000 }
-                : {};
 
-            mediaRecorder = new MediaRecorder(stream, options);
-            audioChunks = [];
+if (voiceRecordBtn) {
 
-            mediaRecorder.ondataavailable = (event) => {
-                audioChunks.push(event.data);
-            };
+    voiceRecordBtn.addEventListener(
+        "click",
+        async () => {
 
-            mediaRecorder.onstop = async () => {
-                stream.getTracks().forEach(track => track.stop());
+            if (!isRecording) {
 
-                const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                try {
 
-                const pending = document.createElement("div");
-                pending.className = "message mine";
-                pending.innerHTML =
-                    '<div class="message-bubble"><div class="message-text">🎤 Sending voice...</div></div>';
-                document.getElementById("messages").appendChild(pending);
-                scrollMessages();
-if (!currentRoom) return;
-                const fileName = currentRoom.id + "/" + crypto.randomUUID() + ".webm";
+                    const stream =
+                        await navigator.mediaDevices.getUserMedia({
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                autoGainControl: true,
+                                channelCount: 1
+                            }
+                        });
 
-                const { error: uploadError } = await supabaseClient
+                    const options =
+                        MediaRecorder.isTypeSupported(
+                            "audio/webm;codecs=opus"
+                        )
+                            ? {
+                                mimeType:
+                                    "audio/webm;codecs=opus",
+                                audioBitsPerSecond:
+                                    32000
+                            }
+                            : {};
+
+                    mediaRecorder =
+                        new MediaRecorder(
+                            stream,
+                            options
+                        );
+
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable =
+                        event => {
+
+                            if (event.data.size > 0) {
+                                audioChunks.push(
+                                    event.data
+                                );
+                            }
+                        };
+
+
+                    mediaRecorder.onstop =
+                        async () => {
+
+                            stream
+                                .getTracks()
+                                .forEach(track =>
+                                    track.stop()
+                                );
+
+                            if (!currentRoom) {
+                                stopRecordTimer();
+                                return;
+                            }
+
+                            const audioBlob =
+                                new Blob(
+                                    audioChunks,
+                                    {
+                                        type:
+                                            "audio/webm"
+                                    }
+                                );
+
+                            const pending =
+                                document.createElement("div");
+
+                            pending.className =
+                                "message mine";
+                          pending.innerHTML =
+                '<div class="message-bubble">' +
+                '<div class="message-text">' +
+                'Sending...' +
+                '</div></div>';
+
+
+            $("messages")?.appendChild(
+                pending
+            );
+
+
+            scrollMessages();
+
+
+            let body = file;
+            let ext = "mp4";
+            let type = file.type;
+
+
+            if (!isVideo) {
+
+                body =
+                    await compressImage(
+                        file
+                    );
+
+                ext = "jpg";
+
+                type =
+                    "image/jpeg";
+
+            } else if (
+                file.name.includes(".")
+            ) {
+
+                ext =
+                    file.name
+                        .split(".")
+                        .pop();
+            }
+
+
+            const path =
+                currentRoom.id +
+                "/" +
+                crypto.randomUUID() +
+                "." +
+                ext;
+
+
+            const {
+                error: upErr
+            } =
+                await supabaseClient
                     .storage
-                    .from("voice")
-                    .upload(fileName, audioBlob, { contentType: "audio/webm" });
+                    .from("media")
+                    .upload(
+                        path,
+                        body,
+                        {
+                            contentType:
+                                type
+                        }
+                    );
 
-                if (uploadError) {
-                    console.error(uploadError);
-                    pending.remove();
-                    alert("Voice upload failed.");
-                    return;
-                }
 
-                const { data: urlData } = supabaseClient
-                    .storage
-                    .from("voice")
-                    .getPublicUrl(fileName);
+            if (upErr) {
 
-                const { error: insertError } = await supabaseClient
-                    .from("messages")
-                    .insert({
-                        room_id: currentRoom.id,
-                        username: currentUser,
-                        message: "",
-                        audio_url: urlData.publicUrl
-                    });
+                console.error(
+                    upErr
+                );
 
                 pending.remove();
 
-                if (insertError) {
-                    console.error(insertError);
-                    alert("Voice message could not be sent.");
-                }
-            };
+                alert(
+                    "Upload failed."
+                );
 
-            mediaRecorder.start();
-
-            isRecording = true;
-            voiceRecordBtn.innerHTML = '<span class="stop-square"></span>';
-            voiceRecordBtn.classList.add("recording");
-            voiceRecordBtn.title = "Stop recording";
-            startRecordTimer();
-        } catch (error) {
-            console.error("Microphone error:", error);
-            alert("Microphone permission is required.");
-        }
-    } else {
-        mediaRecorder.stop();
-
-        isRecording = false;
-        voiceRecordBtn.innerHTML = originalMicHTML;
-        voiceRecordBtn.classList.remove("recording");
-        voiceRecordBtn.title = "Record voice";
-        stopRecordTimer();
-    }
-});
-
-// ---------- SAVED NAME ----------
-const savedName = localStorage.getItem("chatUsername");
-if (savedName) {
-    document.getElementById("username").value = savedName;
-}
-
-// ---------- SEEN ----------
-async function markSeen() {
-    if (!currentRoom || !currentUser || document.hidden) return;
-
-    await supabaseClient.rpc("mark_seen", {
-        p_room: String(currentRoom.id),
-        p_user: currentUser
-    });
-}
-
-document.addEventListener("visibilitychange", markSeen);
-
-// ---------- REACTIONS + MENU ----------
-const REACTIONS = ["😭", "😂", "😢", "👍", "🙏"];
-
-function renderReactions(bubble, reactions) {
-    if (!bubble) return;
-
-    let bar = bubble.querySelector(".reaction-bar");
-    const entries = Object.entries(reactions || {});
-
-    if (!entries.length) {
-        if (bar) bar.remove();
-        return;
-    }
-
-    if (!bar) {
-        bar = document.createElement("div");
-        bar.className = "reaction-bar";
-        bubble.appendChild(bar);
-    }
-
-    const groups = {};
-    entries.forEach(([user, emoji]) => {
-        (groups[emoji] = groups[emoji] || []).push(user);
-    });
-
-    bar.innerHTML = "";
-    Object.entries(groups).forEach(([emoji, users]) => {
-        const chip = document.createElement("span");
-        chip.className = "reaction-chip";
-        chip.textContent = emoji + (users.length > 1 ? " " + users.length : "");
-        chip.addEventListener("click", () => {
-            alert(emoji + " by " + users.join(", "));
-        });
-        bar.appendChild(chip);
-    });
-}
-
-async function sendReaction(messageId, emoji) {
-    await supabaseClient.rpc("react_message", {
-        p_id: String(messageId),
-        p_user: currentUser,
-        p_emoji: emoji
-    });
-}
-
-function closeMessageMenu() {
-    const old = document.querySelector(".message-menu");
-    if (old) old.remove();
-}
-
-function openMessageMenu(message, wrapper) {
-    closeMessageMenu();
-
-    const menu = document.createElement("div");
-    menu.className = "message-menu";
-
-    REACTIONS.forEach(emoji => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.textContent = emoji;
-        b.addEventListener("click", () => {
-            sendReaction(message.id, emoji);
-            closeMessageMenu();
-        });
-        menu.appendChild(b);
-    });
-
-    if (message.username === currentUser) {
-        const del = document.createElement("button");
-        del.type = "button";
-        del.textContent = "🗑️";
-        del.addEventListener("click", async () => {
-            closeMessageMenu();
-            if (!confirm("Delete this message?")) return;
-
-            const { data, error } = await supabaseClient
-                .from("messages")
-                .delete()
-                .eq("id", message.id)
-                .select();
-
-            if (error || !data || data.length === 0) {
-                console.error(error);
-                alert("Delete failed.");
                 return;
             }
 
-            wrapper.remove();
-        });
-        menu.appendChild(del);
-    }
 
-    document.body.appendChild(menu);
+            const url =
+                supabaseClient
+                    .storage
+                    .from("media")
+                    .getPublicUrl(
+                        path
+                    )
+                    .data
+                    .publicUrl;
 
-    const rect = wrapper.getBoundingClientRect();
-    menu.style.top = Math.max(rect.top - 56, 80) + "px";
 
-    const outside = (e) => {
-        if (!menu.contains(e.target)) {
-            closeMessageMenu();
-            document.removeEventListener("pointerdown", outside);
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("messages")
+                    .insert({
+                        room_id:
+                            currentRoom.id,
+
+                        username:
+                            currentUser,
+
+                        message:
+                            "",
+
+                        media_url:
+                            url,
+
+                        media_type:
+                            isVideo
+                                ? "video"
+                                : "image",
+
+                        reply_to:
+                            replyingTo
+                    });
+
+
+            pending.remove();
+
+            clearReply();
+
+
+            if (error) {
+
+                console.error(
+                    error
+                );
+
+                alert(
+                    "Could not send."
+                );
+            }
         }
-    };
-
-    setTimeout(() => {
-        document.addEventListener("pointerdown", outside);
-    }, 300);
-}
-
-function attachLongPress(target, message, wrapper) {
-    let timer;
-    const start = () => {
-        timer = setTimeout(() => openMessageMenu(message, wrapper), 600);
-    };
-    const cancel = () => clearTimeout(timer);
-
-    target.addEventListener("touchstart", start, { passive: true });
-    target.addEventListener("touchend", cancel);
-    target.addEventListener("touchmove", cancel);
-    target.addEventListener("mousedown", start);
-    target.addEventListener("mouseup", cancel);
-    target.addEventListener("mouseleave", cancel);
-    target.addEventListener("contextmenu", e => e.preventDefault());
-}
-
-// ---------- TYPING ----------
-const typingUsers = {};
-
-function showTyping(user) {
-    clearTimeout(typingUsers[user]);
-    typingUsers[user] = setTimeout(() => {
-        delete typingUsers[user];
-        updateTyping();
-    }, 3000);
-    updateTyping();
-}
-
-function updateTyping() {
-    const el = document.getElementById("typingIndicator");
-    if (!el) return;
-
-    const names = Object.keys(typingUsers);
-    el.textContent = names.length
-        ? names.join(", ") + (names.length > 1 ? " are" : " is") + " typing..."
-        : "";
-}
-
-let lastTypingSent = 0;
-
-document.getElementById("messageInput").addEventListener("input", () => {
-    if (!realtimeChannel || !currentUser) return;
-
-    const now = Date.now();
-    if (now - lastTypingSent < 1500) return;
-    lastTypingSent = now;
-
-    realtimeChannel.send({
-        type: "broadcast",
-        event: "typing",
-        payload: { user: currentUser }
-    });
-});
-// ---------- REPLY ----------
-let replyingTo = null;
-
-function startReply(message) {
-    replyingTo = {
-        id: message.id,
-        name: message.username === currentUser ? "You" : message.username,
-        text: message.audio_url ? "🎤 Voice message" : (message.message || "").slice(0, 80)
-    };
-    document.getElementById("replyBarName").textContent = replyingTo.name;
-    document.getElementById("replyBarMsg").textContent = replyingTo.text;
-    document.getElementById("replyBar").classList.remove("hidden");
-    document.getElementById("messageInput").focus();
-}
-
-function clearReply() {
-    replyingTo = null;
-    document.getElementById("replyBar").classList.add("hidden");
-}
-
-document.getElementById("replyCancel").addEventListener("click", clearReply);
-
-function attachSwipeReply(el, message) {
-    let startX = 0;
-    let startY = 0;
-    let moved = false;
-
-    el.addEventListener("touchstart", e => {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        moved = false;
-    }, { passive: true, capture: true });
-
-    el.addEventListener("touchmove", e => {
-        const dx = e.touches[0].clientX - startX;
-        const dy = Math.abs(e.touches[0].clientY - startY);
-
-        if (dy > 30) return;
-
-        if (Math.abs(dx) > 10) {
-            moved = true;
-            const shift = Math.max(-60, Math.min(60, dx));
-            el.style.transform = `translateX(${shift}px)`;
-        }
-    }, { passive: true, capture: true });
-
-    el.addEventListener("touchend", e => {
-        const dx = e.changedTouches[0].clientX - startX;
-
-        el.style.transition = "transform 0.2s";
-        el.style.transform = "";
-
-        setTimeout(() => {
-            el.style.transition = "";
-        }, 200);
-
-        if (moved && Math.abs(dx) > 50) {
-            startReply(message);
-        }
-    }, { capture: true });
-}
-// ---------- RECORD TIMER ----------
-let recordInterval = null;
-
-function startRecordTimer() {
-    const el = document.getElementById("typingIndicator");
-    let seconds = 0;
-    el.textContent = "🔴 Recording 0:00";
-    recordInterval = setInterval(() => {
-        seconds++;
-        const m = Math.floor(seconds / 60);
-        const s = String(seconds % 60).padStart(2, "0");
-        el.textContent = "🔴 Recording " + m + ":" + s;
-    }, 1000);
-}
-
-function stopRecordTimer() {
-    clearInterval(recordInterval);
-    recordInterval = null;
-    document.getElementById("typingIndicator").textContent = "";
-}
-// ---------- IOS EMOJI ----------
-const EMOJI_BASE =
-    "https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/";
-
-const EMOJI_RE = /(?:\p{Regional_Indicator}{2})|(?:[#*0-9]\uFE0F?\u20E3)|(?:\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier})?)*)/gu;
-
-function emojiFile(str, withFE0F) {
-    let codes = Array.from(str).map(c =>
-        c.codePointAt(0).toString(16).padStart(4, "0")
     );
-    if (!withFE0F) codes = codes.filter(c => c !== "fe0f");
-    return EMOJI_BASE + codes.join("-") + ".png";
 }
 
-function makeEmojiImg(str) {
-    const img = document.createElement("img");
-    img.className = "ios-emoji";
-    img.alt = str;
-    img.draggable = false;
-    img.src = emojiFile(str, true);
-    img.onerror = () => {
-        if (!img.dataset.retry) {
-            img.dataset.retry = "1";
-            img.src = emojiFile(str, false);
-        } else {
-            img.replaceWith(document.createTextNode(str));
-        }
-    };
-    return img;
-}
+// ======================================================
+// STICKERS + CUTOUT
+// ======================================================
 
-function convertEmoji(root) {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-        acceptNode(node) {
-            const p = node.parentNode;
-            if (!p || /^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName)) {
-                return NodeFilter.FILTER_REJECT;
-            }
-            EMOJI_RE.lastIndex = 0;
-            return EMOJI_RE.test(node.nodeValue)
-                ? NodeFilter.FILTER_ACCEPT
-                : NodeFilter.FILTER_REJECT;
-        }
-    });
+const stickerBtn =
+    $("stickerBtn");
 
-    const nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
+const stickerPanel =
+    $("stickerPanel");
 
-    nodes.forEach(node => {
-        const text = node.nodeValue;
-        const frag = document.createDocumentFragment();
-        let last = 0;
+const closeStickerPanel =
+    $("closeStickerPanel");
 
-        for (const m of text.matchAll(EMOJI_RE)) {
-            if (m.index > last) {
-                frag.appendChild(document.createTextNode(text.slice(last, m.index)));
-            }
-            frag.appendChild(makeEmojiImg(m[0]));
-            last = m.index + m[0].length;
-        }
-        if (last < text.length) {
-            frag.appendChild(document.createTextNode(text.slice(last)));
-        }
-        node.replaceWith(frag);
-    });
-}
+const openCutoutBtn =
+    $("openCutoutBtn");
 
-let emojiScheduled = false;
-function scheduleEmoji() {
-    if (emojiScheduled) return;
-    emojiScheduled = true;
-    requestAnimationFrame(() => {
-        emojiScheduled = false;
-        convertEmoji(document.body);
-    });
-}
+const cutoutEditor =
+    $("cutoutEditor");
 
-new MutationObserver(scheduleEmoji).observe(document.body, {
-    childList: true,
-    subtree: true,
-    characterData: true
-});
+const cancelCutoutBtn =
+    $("cancelCutoutBtn");
 
-convertEmoji(document.body);
-// ---------- ROOM HEADER ----------
-function setAvatar(el, url) {
-    if (url) {
-        el.style.backgroundImage = `url("${url}")`;
-        el.textContent = "";
-    } else {
-        el.style.backgroundImage = "";
-        el.textContent = "💬";
-    }
-}
+const saveCutoutBtn =
+    $("saveCutoutBtn");
 
-function applyRoomHeader() {
-    if (!currentRoom) return;
-    document.getElementById("roomName").textContent =
-        currentRoom.room_name || "Private Room";
-    setAvatar(document.getElementById("roomAvatar"), currentRoom.room_avatar);
-}
+const cutoutCanvas =
+    $("cutoutCanvas");
 
-document.getElementById("callBtn").addEventListener("click", () => {
-    alert("Calling coming soon");
-});
-document.getElementById("videoBtn").addEventListener("click", () => {
-    alert("Video calling coming soon");
-});
+const cutoutBrushSize =
+    $("cutoutBrushSize");
 
-let newAvatarBlob = null;
+const eraseCutoutBtn =
+    $("eraseCutoutBtn");
 
-function openEditRoom() {
-    newAvatarBlob = null;
-    document.getElementById("roomNameInput").value = currentRoom.room_name || "";
-    setAvatar(document.getElementById("editAvatarPreview"), currentRoom.room_avatar);
-    document.getElementById("editRoomModal").classList.remove("hidden");
-}
+const restoreCutoutBtn =
+    $("restoreCutoutBtn");
 
-document.getElementById("editRoomBtn").addEventListener("click", openEditRoom);
-document.getElementById("headerInfo").addEventListener("click", openEditRoom);
-document.getElementById("cancelRoomBtn").addEventListener("click", () => {
-    document.getElementById("editRoomModal").classList.add("hidden");
-});
+const resetCutoutBtn =
+    $("resetCutoutBtn");
 
-document.getElementById("avatarFile").addEventListener("change", e => {
-    const file = e.target.files[0];
-    if (!file) return;
+const stickerGrid =
+    $("stickerGrid");
 
-    const img = new Image();
-    img.onload = () => {
-        const size = 256;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const side = Math.min(img.width, img.height);
-        canvas.getContext("2d").drawImage(
-            img,
-            (img.width - side) / 2, (img.height - side) / 2, side, side,
-            0, 0, size, size
+const emptyStickerMessage =
+    $("emptyStickerMessage");
+
+
+let stickers = [];
+
+
+try {
+
+    stickers =
+        JSON.parse(
+            localStorage.getItem(
+                "privateRoomStickers"
+            ) || "[]"
         );
-        canvas.toBlob(blob => {
-            newAvatarBlob = blob;
-            setAvatar(
-                document.getElementById("editAvatarPreview"),
-                URL.createObjectURL(blob)
-            );
-        }, "image/jpeg", 0.85);
-    };
-    img.src = URL.createObjectURL(file);
-});
 
-document.getElementById("saveRoomBtn").addEventListener("click", async () => {
-    const name = document.getElementById("roomNameInput").value.trim() || null;
-    let avatarUrl = null;
-
-    if (newAvatarBlob) {
-        const path = currentRoom.id + "/" + crypto.randomUUID() + ".jpg";
-        const { error: upErr } = await supabaseClient
-            .storage.from("avatars")
-            .upload(path, newAvatarBlob, { contentType: "image/jpeg" });
-
-        if (upErr) {
-            console.error(upErr);
-            alert("Photo upload failed.");
-            return;
-        }
-        avatarUrl = supabaseClient
-            .storage.from("avatars")
-            .getPublicUrl(path).data.publicUrl;
+    if (!Array.isArray(stickers)) {
+        stickers = [];
     }
 
-    const { error } = await supabaseClient.rpc("update_room", {
-        p_id: String(currentRoom.id),
-        p_password: currentRoom.password,
-        p_name: name,
-        p_avatar: avatarUrl
-    });
+} catch (error) {
 
-    if (error) {
-        console.error(error);
-        alert("Could not save.");
-        return;
-    }
+    console.error(
+        "Sticker storage error:",
+        error
+    );
 
-    currentRoom.room_name = name;
-    if (avatarUrl) currentRoom.room_avatar = avatarUrl;
-    applyRoomHeader();
-
-    realtimeChannel.send({
-        type: "broadcast",
-        event: "roomupdate",
-        payload: { name: name, avatar: avatarUrl }
-    });
-
-    document.getElementById("editRoomModal").classList.add("hidden");
-});
-// ---------- PHOTO / VIDEO ----------
-const mediaFile = document.getElementById("mediaFile");
-
-document.getElementById("attachBtn").addEventListener("click", () => {
-    if (!currentRoom) return;
-    mediaFile.click();
-});
-
-function compressImage(file) {
-    return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => {
-            const max = 1280;
-            const scale = Math.min(1, max / Math.max(img.width, img.height));
-            const canvas = document.createElement("canvas");
-            canvas.width = Math.round(img.width * scale);
-            canvas.height = Math.round(img.height * scale);
-            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-            canvas.toBlob(b => resolve(b || file), "image/jpeg", 0.8);
-        };
-        img.onerror = () => resolve(file);
-        img.src = URL.createObjectURL(file);
-    });
+    stickers = [];
 }
 
-mediaFile.addEventListener("change", async () => {
-    const file = mediaFile.files[0];
-    mediaFile.value = "";
-    if (!file || !currentRoom) return;
 
-    const isVideo = file.type.startsWith("video");
+let currentStickerTab =
+    "recent";
 
-    if (isVideo && file.size > 25 * 1024 * 1024) {
-        alert("Video 25 MB se chhota hona chahiye.");
+
+let cutoutImage = null;
+
+let originalCanvasData = null;
+
+let cutoutDrawing = false;
+
+let cutoutMode = "erase";
+
+
+// ======================================================
+// OPEN STICKERS
+// ======================================================
+
+if (
+    stickerBtn &&
+    stickerPanel
+) {
+
+    stickerBtn.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            stickerPanel.classList.toggle(
+                "hidden"
+            );
+
+
+            if (
+                !stickerPanel.classList.contains(
+                    "hidden"
+                )
+            ) {
+
+                renderStickerPanel();
+            }
+        }
+    );
+}
+
+
+// ======================================================
+// CLOSE STICKERS
+// ======================================================
+
+// IMPORTANT:
+// Ye guard isliye lagaya hai taake agar HTML mein
+// closeStickerPanel missing bhi ho to JS crash na kare.
+
+if (
+    closeStickerPanel &&
+    stickerPanel
+) {
+
+    closeStickerPanel.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            stickerPanel.classList.add(
+                "hidden"
+            );
+        }
+    );
+}
+
+
+// ======================================================
+// STICKER TABS
+// ======================================================
+
+document
+    .querySelectorAll(".sticker-tab")
+    .forEach(tab => {
+
+        tab.addEventListener(
+            "click",
+            () => {
+
+                document
+                    .querySelectorAll(
+                        ".sticker-tab"
+                    )
+                    .forEach(t => {
+
+                        t.classList.remove(
+                            "active"
+                        );
+                    });
+
+
+                tab.classList.add(
+                    "active"
+                );
+
+
+                currentStickerTab =
+                    tab.dataset.tab ||
+                    "recent";
+
+
+                renderStickerPanel();
+            }
+        );
+    });
+
+
+// ======================================================
+// OPEN CUTOUT
+// ======================================================
+
+if (openCutoutBtn) {
+
+    openCutoutBtn.addEventListener(
+        "click",
+        () => {
+
+            openCutoutFilePicker();
+
+            if (stickerPanel) {
+                stickerPanel.classList.add("hidden");
+            }
+        }
+    );
+    }
+                
+                                 
+  // ======================================================
+// FILE PICKER
+// ======================================================
+
+function openCutoutFilePicker() {
+
+    const input =
+        document.createElement(
+            "input"
+        );
+
+    input.type = "file";
+    input.accept = "image/*";
+    input.style.display = "none";
+    document.body.appendChild(input);
+
+
+    input.addEventListener(
+        "change",
+        () => {
+
+            const file =
+                input.files[0];
+
+            if (!file) return;
+
+
+            const reader =
+                new FileReader();
+
+
+            reader.onload = () => {
+
+                loadCutoutImage(
+                    reader.result
+                );
+            };
+
+
+            reader.readAsDataURL(
+                file
+            );
+        }
+    );
+
+
+    input.click();
+}
+
+
+// ======================================================
+// LOAD CUTOUT IMAGE
+// ======================================================
+
+function loadCutoutImage(src) {
+
+    if (!cutoutCanvas) return;
+
+
+    const img =
+        new Image();
+
+
+    img.onload = () => {
+
+        cutoutImage =
+            img;
+
+
+        const maxSize =
+            700;
+
+
+        let width =
+            img.width;
+
+        let height =
+            img.height;
+
+
+        if (
+            width > maxSize ||
+            height > maxSize
+        ) {
+
+            const scale =
+                Math.min(
+                    maxSize / width,
+                    maxSize / height
+                );
+
+
+            width *= scale;
+            height *= scale;
+        }
+
+
+        width =
+            Math.round(width);
+
+        height =
+            Math.round(height);
+
+
+        cutoutCanvas.width =
+            width;
+
+        cutoutCanvas.height =
+            height;
+
+
+        const ctx =
+            cutoutCanvas.getContext(
+                "2d"
+            );
+
+
+        ctx.clearRect(
+            0,
+            0,
+            width,
+            height
+        );
+
+
+        ctx.drawImage(
+            img,
+            0,
+            0,
+            width,
+            height
+        );
+
+
+        originalCanvasData =
+            ctx.getImageData(
+                0,
+                0,
+                width,
+                height
+            );
+
+
+        cutoutMode =
+            "erase";
+
+
+        if (eraseCutoutBtn) {
+            eraseCutoutBtn.classList.add(
+                "active"
+            );
+        }
+
+
+        if (restoreCutoutBtn) {
+            restoreCutoutBtn.classList.remove(
+                "active"
+            );
+        }
+
+
+        if (cutoutEditor) {
+
+            cutoutEditor.classList.remove(
+                "hidden"
+            );
+        }
+    };
+
+
+    img.onerror = () => {
+
+        alert(
+            "Image load nahi ho saki."
+        );
+    };
+
+
+    img.src = src;
+}
+
+
+// ======================================================
+// CANVAS POSITION
+// ======================================================
+
+function getCanvasPosition(event) {
+
+    if (!cutoutCanvas) {
+        return {
+            x: 0,
+            y: 0
+        };
+    }
+
+
+    const rect =
+        cutoutCanvas.getBoundingClientRect();
+
+
+    let clientX;
+    let clientY;
+
+
+    if (
+        event.touches &&
+        event.touches.length
+    ) {
+
+        clientX =
+            event.touches[0].clientX;
+
+        clientY =
+            event.touches[0].clientY;
+
+    } else {
+
+        clientX =
+            event.clientX;
+
+        clientY =
+            event.clientY;
+    }
+
+
+    return {
+
+        x:
+            (clientX - rect.left) *
+            (
+                cutoutCanvas.width /
+                rect.width
+            ),
+
+        y:
+            (clientY - rect.top) *
+            (
+                cutoutCanvas.height /
+                rect.height
+            )
+    };
+}
+
+                    
+
+                    // ======================================================
+// CUTOUT DRAWING
+// ======================================================
+
+function eraseAtPosition(event) {
+
+    if (
+        !cutoutDrawing ||
+        !cutoutCanvas
+    ) {
         return;
     }
 
-    const pending = document.createElement("div");
-    pending.className = "message mine";
-    pending.innerHTML =
-        '<div class="message-bubble"><div class="message-text">Sending...</div></div>';
-    document.getElementById("messages").appendChild(pending);
-    scrollMessages();
 
-    let body = file;
-    let ext = "mp4";
-    let type = file.type;
+    event.preventDefault();
 
-    if (!isVideo) {
-        body = await compressImage(file);
-        ext = "jpg";
-        type = "image/jpeg";
-    } else if (file.name.includes(".")) {
-        ext = file.name.split(".").pop();
+
+    const pos =
+        getCanvasPosition(
+            event
+        );
+
+
+    const ctx =
+        cutoutCanvas.getContext(
+            "2d"
+        );
+
+
+    const size =
+        Number(
+            cutoutBrushSize?.value ||
+            40
+        );
+
+
+    if (
+        cutoutMode ===
+        "erase"
+    ) {
+
+        ctx.save();
+
+        ctx.globalCompositeOperation =
+            "destination-out";
+
+
+        ctx.beginPath();
+
+
+        ctx.arc(
+            pos.x,
+            pos.y,
+            size / 2,
+            0,
+            Math.PI * 2
+        );
+
+
+        ctx.fill();
+
+        ctx.restore();
+
+    } else {
+
+        // Restore original image only
+        // inside the brush circle.
+
+        const half =
+            size / 2;
+
+
+        ctx.save();
+
+
+        ctx.beginPath();
+
+
+        ctx.arc(
+            pos.x,
+            pos.y,
+            half,
+            0,
+            Math.PI * 2
+        );
+
+
+        ctx.clip();
+
+
+        ctx.drawImage(
+            cutoutImage,
+            0,
+            0,
+            cutoutCanvas.width,
+            cutoutCanvas.height
+        );
+
+
+        ctx.restore();
+    }
+}
+
+// ======================================================
+// CANVAS EVENTS
+// ======================================================
+
+if (cutoutCanvas) {
+
+    cutoutCanvas.addEventListener(
+        "mousedown",
+        event => {
+
+            cutoutDrawing = true;
+
+            eraseAtPosition(
+                event
+            );
+        }
+    );
+
+
+    cutoutCanvas.addEventListener(
+        "mousemove",
+        eraseAtPosition
+    );
+
+
+    cutoutCanvas.addEventListener(
+        "mouseup",
+        () => {
+
+            cutoutDrawing = false;
+        }
+    );
+
+
+    cutoutCanvas.addEventListener(
+        "mouseleave",
+        () => {
+
+            cutoutDrawing = false;
+        }
+    );
+
+
+    cutoutCanvas.addEventListener(
+        "touchstart",
+        event => {
+
+            cutoutDrawing = true;
+
+            eraseAtPosition(
+                event
+            );
+
+        },
+        {
+            passive: false
+        }
+    );
+
+
+    cutoutCanvas.addEventListener(
+        "touchmove",
+        eraseAtPosition,
+        {
+            passive: false
+        }
+    );
+
+
+    cutoutCanvas.addEventListener(
+        "touchend",
+        () => {
+
+            cutoutDrawing = false;
+        }
+    );
+
+
+    cutoutCanvas.addEventListener(
+        "touchcancel",
+        () => {
+
+            cutoutDrawing = false;
+        }
+    );
+}
+
+
+// ======================================================
+// ERASE
+// ======================================================
+
+if (eraseCutoutBtn) {
+
+    eraseCutoutBtn.addEventListener(
+        "click",
+        () => {
+
+            cutoutMode =
+                "erase";
+
+
+            eraseCutoutBtn.classList.add(
+                "active"
+            );
+
+
+            restoreCutoutBtn?.classList.remove(
+                "active"
+            );
+        }
+    );
+}
+
+            // ======================================================
+// RESTORE
+// ======================================================
+
+if (restoreCutoutBtn) {
+
+    restoreCutoutBtn.addEventListener(
+        "click",
+        () => {
+
+            cutoutMode =
+                "restore";
+
+
+            restoreCutoutBtn.classList.add(
+                "active"
+            );
+
+
+            eraseCutoutBtn?.classList.remove(
+                "active"
+            );
+        }
+    );
+}
+
+
+// ======================================================
+// RESET
+// ======================================================
+
+if (resetCutoutBtn) {
+
+    resetCutoutBtn.addEventListener(
+        "click",
+        () => {
+
+            if (
+                !originalCanvasData ||
+                !cutoutCanvas
+            ) {
+                return;
+            }
+
+
+            const ctx =
+                cutoutCanvas.getContext(
+                    "2d"
+                );
+
+
+            ctx.putImageData(
+                originalCanvasData,
+                0,
+                0
+            );
+        }
+    );
+}
+
+
+// ======================================================
+// CANCEL CUTOUT
+// ======================================================
+
+if (cancelCutoutBtn) {
+
+    cancelCutoutBtn.addEventListener(
+        "click",
+        () => {
+
+            cutoutImage = null;
+
+            originalCanvasData = null;
+
+            cutoutDrawing = false;
+
+
+            if (cutoutCanvas) {
+
+                const ctx =
+                    cutoutCanvas.getContext(
+                        "2d"
+                    );
+
+
+                ctx.clearRect(
+                    0,
+                    0,
+                    cutoutCanvas.width,
+                    cutoutCanvas.height
+                );
+            }
+
+
+            if (cutoutEditor) {
+
+                cutoutEditor.classList.add(
+                    "hidden"
+                );
+            }
+        }
+    );
+}
+
+
+// ======================================================
+// SAVE STICKER
+// ======================================================
+
+if (saveCutoutBtn) {
+
+    saveCutoutBtn.addEventListener(
+        "click",
+        () => {
+
+            if (
+                !cutoutImage ||
+                !cutoutCanvas
+            ) {
+                return;
+            }
+
+
+            const stickerData =
+                cutoutCanvas.toDataURL(
+                    "image/png"
+                );
+
+
+            const sticker = {
+
+                id:
+                    crypto.randomUUID(),
+
+                image:
+                    stickerData,
+
+                createdAt:
+                    Date.now(),
+
+                favorite:
+                    false
+            };
+
+
+            stickers.unshift(
+                sticker
+            );
+
+
+            localStorage.setItem(
+                "privateRoomStickers",
+                JSON.stringify(
+                    stickers
+                )
+            );
+
+
+            if (cutoutEditor) {
+
+                cutoutEditor.classList.add(
+                    "hidden"
+                );
+            }
+
+
+            cutoutImage = null;
+
+            originalCanvasData = null;
+
+
+            renderStickerPanel();
+
+
+            if (stickerPanel) {
+
+                stickerPanel.classList.remove(
+                    "hidden"
+                );
+            }
+        }
+    );
+}
+
+
+// ======================================================
+// RENDER STICKERS
+// ======================================================
+
+function renderStickerPanel() {
+
+    if (!stickerGrid) return;
+
+
+    stickerGrid.innerHTML = "";
+
+
+    let visibleStickers = [];
+
+
+    if (
+        currentStickerTab ===
+        "favorites"
+    ) {
+
+        visibleStickers =
+            stickers.filter(
+                sticker =>
+                    sticker.favorite
+            );
+
+    } else {
+
+        visibleStickers =
+            [...stickers];
     }
 
-    const path = currentRoom.id + "/" + crypto.randomUUID() + "." + ext;
+
+    if (!visibleStickers.length) {
+
+        emptyStickerMessage?.classList.remove(
+            "hidden"
+        );
+
+        return;
+    }
+
+
+    emptyStickerMessage?.classList.add(
+        "hidden"
+    );
+
+
+    visibleStickers.forEach(
+        sticker => {
+
+            const wrapper =
+                document.createElement(
+                    "div"
+                );
+
+
+            wrapper.className =
+                "sticker-item";
+
+
+            const img =
+                document.createElement(
+                    "img"
+                );
+
+
+            img.src =
+                sticker.image;
+
+            img.alt =
+                "Sticker";
+
+
+            img.addEventListener(
+                "click",
+                () => {
+
+                    sendSticker(
+                        sticker
+                    );
+                }
+            );
+
+
+            wrapper.appendChild(
+                img
+            );
+
+
+            // FAVORITE BUTTON
+
+            const fav =
+                document.createElement(
+                    "button"
+                );
+
+
+            fav.type =
+                "button";
+
+
+            fav.className =
+                "sticker-favorite";
+
+
+            fav.textContent =
+                sticker.favorite
+                    ? "★"
+                    : "☆";
+
+
+            fav.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+
+                    sticker.favorite =
+                        !sticker.favorite;
+
+
+                    localStorage.setItem(
+                        "privateRoomStickers",
+                        JSON.stringify(
+                            stickers
+                        )
+                    );
+
+
+                    renderStickerPanel();
+                }
+            );
+
+
+            wrapper.appendChild(
+                fav
+            );
+
+
+            stickerGrid.appendChild(
+                wrapper
+            );
+        }
+    );
+}
+
+async function sendSticker(sticker) {
+    if (!currentRoom) return;
+
+    if (stickerPanel) stickerPanel.classList.add("hidden");
+
+    const blob = await (await fetch(sticker.image)).blob();
+    const path = currentRoom.id + "/" + crypto.randomUUID() + ".png";
 
     const { error: upErr } = await supabaseClient
         .storage.from("media")
-        .upload(path, body, { contentType: type });
+        .upload(path, blob, { contentType: "image/png" });
 
     if (upErr) {
         console.error(upErr);
-        pending.remove();
-        alert("Upload failed.");
+        alert("Sticker upload failed.");
         return;
     }
 
@@ -990,15 +2056,16 @@ mediaFile.addEventListener("change", async () => {
         username: currentUser,
         message: "",
         media_url: url,
-        media_type: isVideo ? "video" : "image",
+        media_type: "sticker",
         reply_to: replyingTo
     });
 
-    pending.remove();
     clearReply();
 
     if (error) {
         console.error(error);
-        alert("Could not send.");
+        alert("Could not send sticker.");
     }
-});
+}
+
+                                    
