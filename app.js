@@ -586,9 +586,8 @@ function openMessageMenu(message, wrapper) {
         }
     };
     setTimeout(() => document.addEventListener("pointerdown", outside), 300);
-}
-
-function attachLongPress(target, message, wrapper) {
+        }
+        function attachLongPress(target, message, wrapper) {
     let timer;
     const start = () => { timer = setTimeout(() => openMessageMenu(message, wrapper), 600); };
     const cancel = () => clearTimeout(timer);
@@ -709,9 +708,9 @@ function openEditRoom() {
     $("roomNameInput").value = currentRoom.room_name || "";
     setAvatar($("editAvatarPreview"), currentRoom.room_avatar);
     $("editRoomModal").classList.remove("hidden");
-        }
+}
 
- $("editRoomBtn").addEventListener("click", openEditRoom);
+$("editRoomBtn").addEventListener("click", openEditRoom);
 $("headerInfo").addEventListener("click", openEditRoom);
 $("cancelRoomBtn").addEventListener("click", () => $("editRoomModal").classList.add("hidden"));
 
@@ -774,3 +773,87 @@ $("saveRoomBtn").addEventListener("click", async () => {
 
     $("editRoomModal").classList.add("hidden");
 });
+// ---------- IOS EMOJI ----------
+const EMOJI_BASE =
+    "https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/";
+
+const EMOJI_RE = /(?:\p{Regional_Indicator}{2})|(?:[#*0-9]\uFE0F?\u20E3)|(?:\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier})?)*)/gu;
+
+function emojiFile(str, withFE0F) {
+    let codes = Array.from(str).map(c =>
+        c.codePointAt(0).toString(16).padStart(4, "0")
+    );
+    if (!withFE0F) codes = codes.filter(c => c !== "fe0f");
+    return EMOJI_BASE + codes.join("-") + ".png";
+}
+
+function makeEmojiImg(str) {
+    const img = document.createElement("img");
+    img.className = "ios-emoji";
+    img.alt = str;
+    img.draggable = false;
+    img.src = emojiFile(str, true);
+    img.onerror = () => {
+        if (!img.dataset.retry) {
+            img.dataset.retry = "1";
+            img.src = emojiFile(str, false);
+        } else {
+            img.replaceWith(document.createTextNode(str));
+        }
+    };
+    return img;
+}
+
+function convertEmoji(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            const p = node.parentNode;
+            if (!p || /^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName)) {
+                return NodeFilter.FILTER_REJECT;
+            }
+            EMOJI_RE.lastIndex = 0;
+            return EMOJI_RE.test(node.nodeValue)
+                ? NodeFilter.FILTER_ACCEPT
+                : NodeFilter.FILTER_REJECT;
+        }
+    });
+
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+
+    nodes.forEach(node => {
+        const text = node.nodeValue;
+        const frag = document.createDocumentFragment();
+        let last = 0;
+
+        for (const m of text.matchAll(EMOJI_RE)) {
+            if (m.index > last) {
+                frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+            }
+            frag.appendChild(makeEmojiImg(m[0]));
+            last = m.index + m[0].length;
+        }
+        if (last < text.length) {
+            frag.appendChild(document.createTextNode(text.slice(last)));
+        }
+        node.replaceWith(frag);
+    });
+}
+
+let emojiScheduled = false;
+function scheduleEmoji() {
+    if (emojiScheduled) return;
+    emojiScheduled = true;
+    requestAnimationFrame(() => {
+        emojiScheduled = false;
+        convertEmoji(document.body);
+    });
+}
+
+new MutationObserver(scheduleEmoji).observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true
+});
+
+convertEmoji(document.body);
