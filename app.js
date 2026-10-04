@@ -104,6 +104,7 @@ document.getElementById("joinRoomBtn").addEventListener("click", async () => {
 // ---------- OPEN CHAT ----------
 async function openChat() {
     showPage("chatPage");
+    applyRoomHeader();
     document.getElementById("roomLabel").textContent = `Room: ${currentRoom.room_code}`;
 
     await loadMessages();
@@ -173,6 +174,7 @@ function subscribeToMessages() {
                 filter: `room_id=eq.${currentRoom.id}`
             },
             payload => {
+                if (!currentRoom) return;
                 displayMessage(payload.new);
                 scrollMessages();
                 if (payload.new.username !== currentUser) markSeen();
@@ -215,11 +217,20 @@ function subscribeToMessages() {
                 }
             }
         )
+        .on("broadcast", { event: "roomupdate" }, payload => {
+            currentRoom.room_name = payload.payload.name;
+            if (payload.payload.avatar) {
+                currentRoom.room_avatar = payload.payload.avatar;
+            }
+            applyRoomHeader();
+        })
         .on("broadcast", { event: "typing" }, payload => {
             showTyping(payload.payload.user);
         })
         .subscribe();
 }
+
+    
 
 // ---------- DISPLAY MESSAGE ----------
 function displayMessage(message) {
@@ -235,7 +246,17 @@ function displayMessage(message) {
     bubble.className = "message-bubble";
 
     let text;
-    if (message.audio_url) {
+    if (message.media_url) {
+        if (message.media_type === "video") {
+            text = document.createElement("video");
+            text.controls = true;
+            text.preload = "metadata";
+        } else {
+            text = document.createElement("img");
+        }
+        text.src = message.media_url;
+        text.className = "message-media";
+    } else if (message.audio_url) {
         text = document.createElement("audio");
         text.controls = true;
         text.src = message.audio_url;
@@ -377,7 +398,7 @@ voiceRecordBtn.addEventListener("click", async () => {
                     '<div class="message-bubble"><div class="message-text">🎤 Sending voice...</div></div>';
                 document.getElementById("messages").appendChild(pending);
                 scrollMessages();
-
+if (!currentRoom) return;
                 const fileName = currentRoom.id + "/" + crypto.randomUUID() + ".webm";
 
                 const { error: uploadError } = await supabaseClient
@@ -638,63 +659,4 @@ function clearReply() {
 
 document.getElementById("replyCancel").addEventListener("click", clearReply);
 
-function attachSwipeReply(el, message) {
-    let startX = 0;
-    let startY = 0;
-    let moved = false;
-
-    el.addEventListener("touchstart", e => {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        moved = false;
-    }, { passive: true, capture: true });
-
-    el.addEventListener("touchmove", e => {
-        const dx = e.touches[0].clientX - startX;
-        const dy = Math.abs(e.touches[0].clientY - startY);
-
-        if (dy > 30) return;
-
-        if (Math.abs(dx) > 10) {
-            moved = true;
-            const shift = Math.max(-60, Math.min(60, dx));
-            el.style.transform = `translateX(${shift}px)`;
-        }
-    }, { passive: true, capture: true });
-
-    el.addEventListener("touchend", e => {
-        const dx = e.changedTouches[0].clientX - startX;
-
-        el.style.transition = "transform 0.2s";
-        el.style.transform = "";
-
-        setTimeout(() => {
-            el.style.transition = "";
-        }, 200);
-
-        if (moved && Math.abs(dx) > 50) {
-            startReply(message);
-        }
-    }, { capture: true });
-}
-// ---------- RECORD TIMER ----------
-let recordInterval = null;
-
-function startRecordTimer() {
-    const el = document.getElementById("typingIndicator");
-    let seconds = 0;
-    el.textContent = "🔴 Recording 0:00";
-    recordInterval = setInterval(() => {
-        seconds++;
-        const m = Math.floor(seconds / 60);
-        const s = String(seconds % 60).padStart(2, "0");
-        el.textContent = "🔴 Recording " + m + ":" + s;
-    }, 1000);
-}
-
-function stopRecordTimer() {
-    clearInterval(recordInterval);
-    recordInterval = null;
-    document.getElementById("typingIndicator").textContent = "";
-}
-    
+function at
