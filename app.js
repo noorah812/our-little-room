@@ -659,4 +659,346 @@ function clearReply() {
 
 document.getElementById("replyCancel").addEventListener("click", clearReply);
 
-function at
+function attachSwipeReply(el, message) {
+    let startX = 0;
+    let startY = 0;
+    let moved = false;
+
+    el.addEventListener("touchstart", e => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        moved = false;
+    }, { passive: true, capture: true });
+
+    el.addEventListener("touchmove", e => {
+        const dx = e.touches[0].clientX - startX;
+        const dy = Math.abs(e.touches[0].clientY - startY);
+
+        if (dy > 30) return;
+
+        if (Math.abs(dx) > 10) {
+            moved = true;
+            const shift = Math.max(-60, Math.min(60, dx));
+            el.style.transform = `translateX(${shift}px)`;
+        }
+    }, { passive: true, capture: true });
+
+    el.addEventListener("touchend", e => {
+        const dx = e.changedTouches[0].clientX - startX;
+
+        el.style.transition = "transform 0.2s";
+        el.style.transform = "";
+
+        setTimeout(() => {
+            el.style.transition = "";
+        }, 200);
+
+        if (moved && Math.abs(dx) > 50) {
+            startReply(message);
+        }
+    }, { capture: true });
+}
+// ---------- RECORD TIMER ----------
+let recordInterval = null;
+
+function startRecordTimer() {
+    const el = document.getElementById("typingIndicator");
+    let seconds = 0;
+    el.textContent = "🔴 Recording 0:00";
+    recordInterval = setInterval(() => {
+        seconds++;
+        const m = Math.floor(seconds / 60);
+        const s = String(seconds % 60).padStart(2, "0");
+        el.textContent = "🔴 Recording " + m + ":" + s;
+    }, 1000);
+}
+
+function stopRecordTimer() {
+    clearInterval(recordInterval);
+    recordInterval = null;
+    document.getElementById("typingIndicator").textContent = "";
+}
+// ---------- IOS EMOJI ----------
+const EMOJI_BASE =
+    "https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.0.1/img/apple/64/";
+
+const EMOJI_RE = /(?:\p{Regional_Indicator}{2})|(?:[#*0-9]\uFE0F?\u20E3)|(?:\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier})?)*)/gu;
+
+function emojiFile(str, withFE0F) {
+    let codes = Array.from(str).map(c =>
+        c.codePointAt(0).toString(16).padStart(4, "0")
+    );
+    if (!withFE0F) codes = codes.filter(c => c !== "fe0f");
+    return EMOJI_BASE + codes.join("-") + ".png";
+}
+
+function makeEmojiImg(str) {
+    const img = document.createElement("img");
+    img.className = "ios-emoji";
+    img.alt = str;
+    img.draggable = false;
+    img.src = emojiFile(str, true);
+    img.onerror = () => {
+        if (!img.dataset.retry) {
+            img.dataset.retry = "1";
+            img.src = emojiFile(str, false);
+        } else {
+            img.replaceWith(document.createTextNode(str));
+        }
+    };
+    return img;
+}
+
+function convertEmoji(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            const p = node.parentNode;
+            if (!p || /^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName)) {
+                return NodeFilter.FILTER_REJECT;
+            }
+            EMOJI_RE.lastIndex = 0;
+            return EMOJI_RE.test(node.nodeValue)
+                ? NodeFilter.FILTER_ACCEPT
+                : NodeFilter.FILTER_REJECT;
+        }
+    });
+
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+
+    nodes.forEach(node => {
+        const text = node.nodeValue;
+        const frag = document.createDocumentFragment();
+        let last = 0;
+
+        for (const m of text.matchAll(EMOJI_RE)) {
+            if (m.index > last) {
+                frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+            }
+            frag.appendChild(makeEmojiImg(m[0]));
+            last = m.index + m[0].length;
+        }
+        if (last < text.length) {
+            frag.appendChild(document.createTextNode(text.slice(last)));
+        }
+        node.replaceWith(frag);
+    });
+}
+
+let emojiScheduled = false;
+function scheduleEmoji() {
+    if (emojiScheduled) return;
+    emojiScheduled = true;
+    requestAnimationFrame(() => {
+        emojiScheduled = false;
+        convertEmoji(document.body);
+    });
+}
+
+new MutationObserver(scheduleEmoji).observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true
+});
+
+convertEmoji(document.body);
+// ---------- ROOM HEADER ----------
+function setAvatar(el, url) {
+    if (url) {
+        el.style.backgroundImage = `url("${url}")`;
+        el.textContent = "";
+    } else {
+        el.style.backgroundImage = "";
+        el.textContent = "💬";
+    }
+}
+
+function applyRoomHeader() {
+    if (!currentRoom) return;
+    document.getElementById("roomName").textContent =
+        currentRoom.room_name || "Private Room";
+    setAvatar(document.getElementById("roomAvatar"), currentRoom.room_avatar);
+}
+
+document.getElementById("callBtn").addEventListener("click", () => {
+    alert("Calling coming soon");
+});
+document.getElementById("videoBtn").addEventListener("click", () => {
+    alert("Video calling coming soon");
+});
+
+let newAvatarBlob = null;
+
+function openEditRoom() {
+    newAvatarBlob = null;
+    document.getElementById("roomNameInput").value = currentRoom.room_name || "";
+    setAvatar(document.getElementById("editAvatarPreview"), currentRoom.room_avatar);
+    document.getElementById("editRoomModal").classList.remove("hidden");
+}
+
+document.getElementById("editRoomBtn").addEventListener("click", openEditRoom);
+document.getElementById("headerInfo").addEventListener("click", openEditRoom);
+document.getElementById("cancelRoomBtn").addEventListener("click", () => {
+    document.getElementById("editRoomModal").classList.add("hidden");
+});
+
+document.getElementById("avatarFile").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const img = new Image();
+    img.onload = () => {
+        const size = 256;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const side = Math.min(img.width, img.height);
+        canvas.getContext("2d").drawImage(
+            img,
+            (img.width - side) / 2, (img.height - side) / 2, side, side,
+            0, 0, size, size
+        );
+        canvas.toBlob(blob => {
+            newAvatarBlob = blob;
+            setAvatar(
+                document.getElementById("editAvatarPreview"),
+                URL.createObjectURL(blob)
+            );
+        }, "image/jpeg", 0.85);
+    };
+    img.src = URL.createObjectURL(file);
+});
+
+document.getElementById("saveRoomBtn").addEventListener("click", async () => {
+    const name = document.getElementById("roomNameInput").value.trim() || null;
+    let avatarUrl = null;
+
+    if (newAvatarBlob) {
+        const path = currentRoom.id + "/" + crypto.randomUUID() + ".jpg";
+        const { error: upErr } = await supabaseClient
+            .storage.from("avatars")
+            .upload(path, newAvatarBlob, { contentType: "image/jpeg" });
+
+        if (upErr) {
+            console.error(upErr);
+            alert("Photo upload failed.");
+            return;
+        }
+        avatarUrl = supabaseClient
+            .storage.from("avatars")
+            .getPublicUrl(path).data.publicUrl;
+    }
+
+    const { error } = await supabaseClient.rpc("update_room", {
+        p_id: String(currentRoom.id),
+        p_password: currentRoom.password,
+        p_name: name,
+        p_avatar: avatarUrl
+    });
+
+    if (error) {
+        console.error(error);
+        alert("Could not save.");
+        return;
+    }
+
+    currentRoom.room_name = name;
+    if (avatarUrl) currentRoom.room_avatar = avatarUrl;
+    applyRoomHeader();
+
+    realtimeChannel.send({
+        type: "broadcast",
+        event: "roomupdate",
+        payload: { name: name, avatar: avatarUrl }
+    });
+
+    document.getElementById("editRoomModal").classList.add("hidden");
+});
+// ---------- PHOTO / VIDEO ----------
+const mediaFile = document.getElementById("mediaFile");
+
+document.getElementById("attachBtn").addEventListener("click", () => {
+    if (!currentRoom) return;
+    mediaFile.click();
+});
+
+function compressImage(file) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            const max = 1280;
+            const scale = Math.min(1, max / Math.max(img.width, img.height));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(b => resolve(b || file), "image/jpeg", 0.8);
+        };
+        img.onerror = () => resolve(file);
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+mediaFile.addEventListener("change", async () => {
+    const file = mediaFile.files[0];
+    mediaFile.value = "";
+    if (!file || !currentRoom) return;
+
+    const isVideo = file.type.startsWith("video");
+
+    if (isVideo && file.size > 25 * 1024 * 1024) {
+        alert("Video 25 MB se chhota hona chahiye.");
+        return;
+    }
+
+    const pending = document.createElement("div");
+    pending.className = "message mine";
+    pending.innerHTML =
+        '<div class="message-bubble"><div class="message-text">Sending...</div></div>';
+    document.getElementById("messages").appendChild(pending);
+    scrollMessages();
+
+    let body = file;
+    let ext = "mp4";
+    let type = file.type;
+
+    if (!isVideo) {
+        body = await compressImage(file);
+        ext = "jpg";
+        type = "image/jpeg";
+    } else if (file.name.includes(".")) {
+        ext = file.name.split(".").pop();
+    }
+
+    const path = currentRoom.id + "/" + crypto.randomUUID() + "." + ext;
+
+    const { error: upErr } = await supabaseClient
+        .storage.from("media")
+        .upload(path, body, { contentType: type });
+
+    if (upErr) {
+        console.error(upErr);
+        pending.remove();
+        alert("Upload failed.");
+        return;
+    }
+
+    const url = supabaseClient.storage.from("media").getPublicUrl(path).data.publicUrl;
+
+    const { error } = await supabaseClient.from("messages").insert({
+        room_id: currentRoom.id,
+        username: currentUser,
+        message: "",
+        media_url: url,
+        media_type: isVideo ? "video" : "image",
+        reply_to: replyingTo
+    });
+
+    pending.remove();
+    clearReply();
+
+    if (error) {
+        console.error(error);
+        alert("Could not send.");
+    }
+});
