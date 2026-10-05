@@ -546,9 +546,8 @@ img.ios-emoji {
     border-radius: 20px;
     padding: 24px;
     text-align: center;
-}
-
-.modal-card h3 {
+    }
+    .modal-card h3 {
     margin-bottom: 14px;
     color: #4a2338;
 }
@@ -924,7 +923,8 @@ body {
 
 #chatPage .messages {
     background: #FFF8F5 !important;
-    }
+}
+
 /* ---------- HEADER ---------- */
 
 .chat-header {
@@ -1039,9 +1039,8 @@ body {
 
 .reply-bar-text strong {
     color: #B96F86 !important;
-}
-
-/* ---------- TYPING ---------- */
+    }
+    /* ---------- TYPING ---------- */
 
 .typing-indicator {
     background: #FFFFFF !important;
@@ -1140,7 +1139,8 @@ input:focus {
 
 .secondary-btn:active {
     background: #F1DDE4 !important;
-    }
+}
+
 /* =========================================================
    ROOM CODE BOX
    ========================================================= */
@@ -1225,4 +1225,267 @@ img.ios-emoji {
     vertical-align: -0.2em;
     display: inline-block;
     pointer-events: none;
-    }
+}
+/* ===== AUTH / TABS / CHATS / PROFILE (dusky rose) ===== */
+.page {
+    padding-bottom: 90px;
+}
+
+.page.top {
+    align-items: flex-start;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 10px;
+    border-radius: 12px;
+    background: #F8E8ED;
+    color: #9E6077;
+    font-weight: 600;
+}
+
+.auth-tab.active {
+    background: #D98FA8;
+    color: #fff;
+}
+
+.auth-msg {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 13px;
+    color: #B96F86;
+    min-height: 16px;
+}
+
+.list-wrap {
+    width: 100%;
+    max-width: 480px;
+}
+
+.list-title {
+    text-align: left;
+    margin: 10px 4px 14px;
+}
+
+.chat-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #EEDDE1;
+    border-radius: 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.chat-row:active {
+    background: #FDF3F6;
+}
+
+.chat-row-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.chat-row-text strong {
+    color: #4B3439;
+    font-size: 15px;
+}
+
+.chat-row-text span {
+    color: #A88D95;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.empty {
+    text-align: center;
+    color: #A88D95;
+    padding: 30px 10px;
+}
+
+.profile-wrap {
+    text-align: center;
+    padding-top: 20px;
+}
+
+.prof-avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    background: #F4DDE4 center / cover no-repeat;
+    color: #B96F86;
+    font-size: 44px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.prof-avatar.small {
+    width: 84px;
+    height: 84px;
+    font-size: 34px;
+}
+
+.prof-name {
+    margin-bottom: 4px;
+}
+
+.prof-username {
+    color: #A88D95;
+    margin-bottom: 8px;
+}
+
+.prof-bio {
+    color: #4B3439;
+    margin-bottom: 20px;
+}
+
+.bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    background: #fff;
+    border-top: 1px solid #EEDDE1;
+    padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
+    z-index: 5000;
+}
+
+.nav-btn {
+    flex: 1;
+    background: none;
+    color: #A88D95;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+}
+
+.nav-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.nav-btn.active {
+    color: #B96F86;
+}
+.message { align-items: flex-end; gap: 6px; }
+.msg-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #F4DDE4 center / cover no-repeat;
+    color: #B96F86; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.myrooms-title { text-align: left; font-size: 13px; font-weight: 700; letter-spacing: 1px; color: #A88D95; margin: 18px 0 8px; }
+.room-card { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #F0E2E5; border-radius: 16px; padding: 12px; margin-bottom: 10px; cursor: pointer; }
+.room-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.room-card-text strong { color: #4B3439; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.room-card-text span { color: #A88D95; font-size: 12px; }
+.room-more { background: none; font-size: 22px; color: #B96F86; padding: 4px 8px; }
+.sheet-backdrop { position: fixed; inset: 0; background: rgba(75,52,57,.45); display: flex; align-items: flex-end; z-index: 10001; }
+.sheet { width: 100%; background: #fff; border-radius: 20px 20px 0 0; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); }
+.sheet button { display: block; width: 100%; background: none; padding: 15px; font-size: 16px; color: #4B3439; border-bottom: 1px solid #F0E2E5; }
+.sheet button.danger { color: #C0506B; }
+.sheet button:last-child { border-bottom: none; color: #A88D95; }
+.pf-wrap { width: 100%; max-width: 480px; padding: 8px 16px 100px; }
+.pf-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.pf-topname { display: flex; align-items: center; gap: 6px; }
+.pf-username { font-size: 19px; font-weight: 700; color: #4B3439; margin: 0; }
+.pf-head { display: flex; align-items: center; gap: 18px; margin-bottom: 12px; }
+.pf-avatar { width: 84px; height: 84px; border-radius: 50%; flex-shrink: 0; cursor: pointer; background: #F4DDE4 center / cover no-repeat; color: #B96F86; font-size: 34px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.pf-info { flex: 1; min-width: 0; }
+.pf-name { text-align: left; font-size: 20px; margin: 0 0 10px; }
+.pf-stats { display: flex; gap: 24px; }
+.pf-stats div { display: flex; flex-direction: column; }
+.pf-stats strong { font-size: 18px; color: #4B3439; }
+.pf-stats span { font-size: 12px; color: #A88D95; }
+.pf-bio { text-align: left; color: #4B3439; font-size: 14px; margin: 0 0 14px; }
+.search-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border-bottom: 1px solid #EEDDE1; flex-shrink: 0; }
+.search-bar input { margin: 0; flex: 1; padding: 10px 14px; }
+.search-bar button { background: none; font-size: 18px; color: #B96F86; }
+.search-hide { display: none !important; }
+.sheet-title { text-align: center; font-weight: 700; color: #4B3439; padding: 8px 0 10px; }
+.member-list { max-height: 50vh; overflow-y: auto; }
+.member-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid #F0E2E5; text-align: left; }
+.member-row:last-child { border-bottom: none; }
+.member-av { width: 40px; height: 40px; border-radius: 50%; background: #F4DDE4 center / cover no-repeat; color: #B96F86; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.member-text { display: flex; flex-direction: column; min-width: 0; }
+.member-text strong { color: #4B3439; font-size: 15px; }
+.member-text span { color: #A88D95; font-size: 12px; }
+#logoutBtn { display: none !important; }
+/* ===== THEMES ===== */
+html[data-theme="blush"] { --bg:#FDECF2; --card:#FFFFFF; --soft:#FFD6E8; --primary:#F27AA6; --text:#4B2338; --muted:#A8788F; --accent:#D6598F; --border:#F8CFE0; --input:#FFFAFC; --other:#FFFFFF; }
+html[data-theme="sage"] { --bg:#F2F8F1; --card:#FFFFFF; --soft:#DDEDD9; --primary:#8DAF86; --text:#4B5E4A; --muted:#8A9E86; --accent:#5F8559; --border:#D3E3CF; --input:#FAFDF9; --other:#FFFFFF; }
+html[data-theme="lavender"] { --bg:#F3EDFF; --card:#FFFFFF; --soft:#E6D8FF; --primary:#A590F0; --text:#4A3F7A; --muted:#9A90BF; --accent:#7C66C9; --border:#E0D6F7; --input:#FBF9FF; --other:#FFFFFF; }
+html[data-theme="midnight"] { --bg:#0F172A; --card:#162338; --soft:#243B55; --primary:#3B82F6; --text:#E2E8F0; --muted:#94A3B8; --accent:#7DB4FF; --border:#2A3F5C; --input:#0F172A; --other:#243B55; }
+
+html[data-theme] body,
+html[data-theme] #chatPage .messages { background: var(--bg) !important; color: var(--text) !important; }
+
+html[data-theme] :is(.card,.modal-card,.sheet,.room-card,.search-bar,.chat-header,.message-form,.typing-indicator,.bottom-nav,.message-menu,.reaction-chip) { background: var(--card) !important; }
+
+html[data-theme] :is(h1,h2,h3,.hdr-text strong,.pf-username,.pf-name,.pf-stats strong,.pf-bio,.room-card-text strong,.sheet-title,.member-text strong,.reply-bar-text,.reaction-chip) { color: var(--text) !important; }
+
+html[data-theme] :is(.subtitle,.back-btn,.hdr-text span,.pf-stats span,.room-card-text span,.myrooms-title,.member-text span,.empty,.nav-btn,.typing-indicator,.message:not(.mine) .message-time) { color: var(--muted) !important; }
+
+html[data-theme] .nav-btn.active { color: var(--accent) !important; }
+
+html[data-theme] input,
+html[data-theme] .message-form input { background: var(--input) !important; border-color: var(--border) !important; color: var(--text) !important; }
+
+html[data-theme] :is(.primary-btn,.send-btn) { background: var(--primary) !important; color: #fff !important; }
+html[data-theme] :is(.secondary-btn,.attach-btn,.voice-record-btn) { background: var(--soft) !important; color: var(--accent) !important; border-color: var(--border) !important; }
+html[data-theme] :is(.hdr-btn,.room-more,.search-bar button,.reply-bar button) { color: var(--accent) !important; }
+
+html[data-theme] :is(.room-avatar,.msg-avatar,.member-av,.pf-avatar,.prof-avatar) { background-color: var(--soft) !important; color: var(--accent) !important; }
+
+html[data-theme] .message.mine .message-bubble { background: var(--primary) !important; color: #fff !important; }
+html[data-theme] .message:not(.mine) .message-bubble { background: var(--other) !important; color: var(--text) !important; border-color: var(--border) !important; }
+
+html[data-theme] .reply-bar { background: var(--soft) !important; border-left-color: var(--accent) !important; }
+html[data-theme] :is(.chat-header,.message-form,.room-card,.sheet button,.bottom-nav,.search-bar,.member-row) { border-color: var(--border) !important; }
+
+html[data-theme] .sheet button:not(.danger) { color: var(--text) !important; }
+html[data-theme] .sheet button.danger { color: #E0607E !important; }
+html[data-theme] .sheet button:last-child { color: var(--muted) !important; }
+#newDmBtn { margin: 0 0 14px; }
+.pf-stats { gap: 16px; }
+.member-text { flex: 1; }
+.friends-card { max-height: 85vh; overflow-y: auto; }
+.friend-add { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.friend-add input { margin: 0; flex: 1; min-width: 0; }
+.friend-add .primary-btn { width: auto; margin: 0; padding: 12px 18px; }
+.friend-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.friend-actions button { background: #F8E8ED; color: #B96F86; border-radius: 10px; padding: 7px 10px; font-size: 13px; }
+.friend-actions button.danger { color: #C0506B; }
+html[data-theme] .friend-actions button { background: var(--soft) !important; color: var(--accent) !important; }
+html[data-theme] .friend-actions button.danger { color: #E0607E !important; }
+.message-menu button .ios-emoji { width: 30px; height: 30px; }
+.info-card { max-height: 85vh; overflow-y: auto; }
+.ri-code { display: flex; align-items: center; justify-content: center; gap: 10px; background: #FDF3F6; border: 2px dashed #D9A0B2; border-radius: 14px; padding: 10px; margin: 6px 0 4px; }
+.ri-code span { font-size: 12px; color: #A88D95; }
+.ri-code strong { letter-spacing: 3px; color: #9E6077; font-size: 18px; }
+.ri-code button { background: none; color: #B96F86; font-weight: 600; }
+html[data-theme] .ri-code { background: var(--soft) !important; border-color: var(--accent) !important; }
+html[data-theme] .ri-code strong, html[data-theme] .ri-code button { color: var(--accent) !important; }
