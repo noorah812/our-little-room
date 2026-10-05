@@ -11,6 +11,17 @@ let currentRoom = null;
 let currentUser = null;
 let realtimeChannel = null;
 let replyingTo = null;
+const avatarCache = {};
+async function loadAvatars(usernames) {
+    const need = [...new Set(usernames)].filter(u => u && !(u in avatarCache));
+    if (!need.length) return;
+    const { data } = await supabaseClient
+        .from("profiles")
+        .select("username,display_name,avatar_url")
+        .in("username", need);
+    need.forEach(u => { avatarCache[u] = null; });
+    (data || []).forEach(p => { avatarCache[p.username] = p; });
+}
 
 const $ = id => document.getElementById(id);
 
@@ -26,7 +37,7 @@ $("showJoinBtn").addEventListener("click", () => showPage("joinPage"));
 // ---------- CREATE ROOM ----------
 $("createRoomBtn").addEventListener("click", async () => {
     const password = $("createPassword").value.trim();
-    if (!password) { alert("Password enter karo."); return; }
+    if (!password) { alert("Please enter a password."); return; }
 
     const roomCode = generateRoomCode();
     const { data, error } = await supabaseClient
@@ -59,7 +70,7 @@ $("joinRoomBtn").addEventListener("click", async () => {
     const password = $("joinPassword").value.trim();
     const username = $("username").value.trim();
 
-    if (!roomCode || !password || !username) { alert("Sab fields fill karo."); return; }
+    if (!roomCode || !password || !username) { alert("Please fill in all fields."); return; }
 
     const { data, error } = await supabaseClient
         .rpc("join_room", { p_code: roomCode, p_password: password })
@@ -87,16 +98,29 @@ async function openChat() {
     subscribeToMessages();
 }
 
-async function loadMessages() {
-    const { data, error } = await supabaseClient
+ async function loadMessages() {
+    let clearedAt = null;
+    if (typeof authUser !== "undefined" && authUser) {
+        const { data: mem } = await supabaseClient
+            .from("room_members")
+            .select("cleared_at")
+            .eq("room_id", currentRoom.id)
+            .eq("user_id", authUser.id)
+            .maybeSingle();
+        clearedAt = mem && mem.cleared_at;
+    }
+
+    let q = supabaseClient
         .from("messages")
         .select("*")
         .eq("room_id", currentRoom.id)
         .order("created_at", { ascending: true });
-
+    if (clearedAt) q = q.gt("created_at", clearedAt);
+    const { data, error } = await q;
     if (error) { console.error(error); return; }
 
     $("messages").innerHTML = "";
+    await loadAvatars((data || []).map(m => m.username));
     (data || []).forEach(m => displayMessage(m));
     scrollMessages();
 }
@@ -131,13 +155,14 @@ function subscribeToMessages() {
     realtimeChannel = supabaseClient
         .channel(`room-${currentRoom.id}`, { config: { broadcast: { self: false } } })
         .on("postgres_changes",
-            { event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${currentRoom.id}` },
-            payload => {
-                if (!currentRoom) return;
-                displayMessage(payload.new);
-                scrollMessages();
-                if (payload.new.username !== currentUser) markSeen();
-            })
+    { event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${currentRoom.id}` },
+    async payload => {
+        if (!currentRoom) return;
+        await loadAvatars([payload.new.username]);
+        displayMessage(payload.new);
+        scrollMessages();
+        if (payload.new.username !== currentUser) markSeen();
+    })
         .on("postgres_changes",
             { event: "DELETE", schema: "public", table: "messages" },
             payload => {
@@ -246,7 +271,18 @@ function displayMessage(message) {
     renderReactions(bubble, message.reactions);
 
     if (message.id) wrapper.dataset.messageId = message.id;
+   const p = avatarCache[message.username];
+const av = document.createElement("div");
+av.className = "msg-avatar";
+if (p && p.avatar_url) av.style.backgroundImage = `url("${p.avatar_url}")`;
+else av.textContent = ((p && p.display_name) || message.username || "?").charAt(0).toUpperCase();
+if (message.username === currentUser) {
     wrapper.appendChild(bubble);
+    wrapper.appendChild(av);
+} else {
+    wrapper.appendChild(av);
+    wrapper.appendChild(bubble);
+}
     attachLongPress(wrapper, message, wrapper);
     attachSwipeReply(wrapper, message);
 
@@ -402,8 +438,7 @@ voiceRecordBtn.addEventListener("click", async () => {
         stopRecordTimer();
     }
 });
-
-// ---------- PHOTO / VIDEO ----------
+    // ---------- PHOTO / VIDEO ----------
 const mediaFile = $("mediaFile");
 
 $("attachBtn").addEventListener("click", () => {
@@ -435,7 +470,7 @@ mediaFile.addEventListener("change", async () => {
 
     const isVideo = file.type.startsWith("video");
     if (isVideo && file.size > 25 * 1024 * 1024) {
-        alert("Video 25 MB se chhota hona chahiye.");
+        alert("Video must be smaller than 25 MB.");
         return;
     }
 
@@ -517,7 +552,8 @@ function renderReactions(bubble, reactions) {
     Object.entries(groups).forEach(([emoji, users]) => {
         const chip = document.createElement("span");
         chip.className = "reaction-chip";
-        chip.textContent = emoji + (users.length > 1 ? " " + users.length : "");
+        chip.appendChild(makeEmojiImg(emoji));
+if (users.length > 1) chip.appendChild(document.createTextNode(" " + users.length));
         chip.addEventListener("click", () => alert(emoji + " by " + users.join(", ")));
         bar.appendChild(chip);
     });
@@ -545,7 +581,7 @@ function openMessageMenu(message, wrapper) {
     REACTIONS.forEach(emoji => {
         const b = document.createElement("button");
         b.type = "button";
-        b.textContent = emoji;
+        b.appendChild(makeEmojiImg(emoji));
         b.addEventListener("click", () => {
             sendReaction(message.id, emoji);
             closeMessageMenu();
@@ -556,7 +592,7 @@ function openMessageMenu(message, wrapper) {
     if (message.username === currentUser) {
         const del = document.createElement("button");
         del.type = "button";
-        del.textContent = "🗑️";
+        del.appendChild(makeEmojiImg("🗑️"));
         del.addEventListener("click", async () => {
             closeMessageMenu();
             if (!confirm("Delete this message?")) return;
@@ -586,8 +622,9 @@ function openMessageMenu(message, wrapper) {
         }
     };
     setTimeout(() => document.addEventListener("pointerdown", outside), 300);
-        }
-        function attachLongPress(target, message, wrapper) {
+}
+
+function attachLongPress(target, message, wrapper) {
     let timer;
     const start = () => { timer = setTimeout(() => openMessageMenu(message, wrapper), 600); };
     const cancel = () => clearTimeout(timer);
@@ -710,8 +747,8 @@ function openEditRoom() {
     $("editRoomModal").classList.remove("hidden");
 }
 
-$("editRoomBtn").addEventListener("click", openEditRoom);
-$("headerInfo").addEventListener("click", openEditRoom);
+
+
 $("cancelRoomBtn").addEventListener("click", () => $("editRoomModal").classList.add("hidden"));
 
 $("avatarFile").addEventListener("change", e => {
@@ -838,9 +875,8 @@ function convertEmoji(root) {
         }
         node.replaceWith(frag);
     });
-}
-
-let emojiScheduled = false;
+        }
+        let emojiScheduled = false;
 function scheduleEmoji() {
     if (emojiScheduled) return;
     emojiScheduled = true;
