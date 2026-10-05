@@ -9,12 +9,47 @@
 
 <body>
 
-    <!-- HOME -->
-    <main id="homePage" class="page">
+    <!-- SPLASH -->
+    <main id="splashPage" class="page">
+        <p class="subtitle">Loading...</p>
+    </main>
+
+    <!-- AUTH -->
+    <main id="authPage" class="page hidden">
         <div class="card">
             <div class="logo">💬</div>
             <h1>Private Room</h1>
             <p class="subtitle">A private space for your group.</p>
+
+            <div class="auth-tabs">
+                <button type="button" id="tabLogin" class="auth-tab active">Log in</button>
+                <button type="button" id="tabSignup" class="auth-tab">Sign up</button>
+            </div>
+
+            <form id="loginForm">
+                <input id="liUsername" type="text" placeholder="Username" autocomplete="username" autocapitalize="none">
+                <input id="liPassword" type="password" placeholder="Password" autocomplete="current-password">
+                <button type="submit" class="primary-btn">Log in</button>
+            </form>
+
+            <form id="signupForm" class="hidden">
+                <input id="suName" type="text" placeholder="Your name" maxlength="30">
+                <input id="suUsername" type="text" placeholder="Username (a-z, 0-9, _ .)" maxlength="20" autocomplete="username" autocapitalize="none">
+                <input id="suPassword" type="password" placeholder="Password (min 8 characters)" autocomplete="new-password">
+                <input id="suPassword2" type="password" placeholder="Confirm password" autocomplete="new-password">
+                <button type="submit" class="primary-btn">Create account</button>
+            </form>
+
+            <p id="authMsg" class="auth-msg"></p>
+        </div>
+    </main>
+
+    <!-- HOME = ROOMS TAB -->
+    <main id="homePage" class="page hidden">
+        <div class="card">
+            <div class="logo">💬</div>
+            <h1>Rooms</h1>
+            <p class="subtitle">Create a new room or join one.</p>
             <button id="createBtn" class="primary-btn">Create Room</button>
             <button id="showJoinBtn" class="secondary-btn">Join Existing Room</button>
         </div>
@@ -44,17 +79,61 @@
             <button class="back-btn" onclick="showPage('homePage')">← Back</button>
             <h2>Join Room</h2>
             <input id="roomCode" type="text" placeholder="Room Code" maxlength="8">
-            <input id="joinPassword" type="password" placeholder="Password">
+            <input id="joinPassword" type="password" placeholder="Room Password">
             <input id="username" type="text" placeholder="Your name" maxlength="20">
             <button id="joinRoomBtn" class="primary-btn">Join Room</button>
         </div>
     </main>
 
+    <!-- CHATS TAB -->
+    <main id="chatsPage" class="page top hidden">
+        <div class="list-wrap">
+            <h2 class="list-title">Chats</h2>
+            <button type="button" id="newDmBtn" class="secondary-btn">✉️ New message</button>
+            <div id="chatsList"></div>
+        </div>
+    </main>
+
+    <!-- PROFILE TAB -->
+<main id="profilePage" class="page top hidden">
+    <div class="pf-wrap">
+        <div class="pf-topbar">
+            <div class="pf-topname">
+                <span>🔒</span>
+                <p id="profUsername" class="pf-username"></p>
+            </div>
+            <button type="button" id="menuBtn" class="hdr-btn" title="Menu">
+                <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+            </button>
+        </div>
+
+        <div class="pf-head">
+            <div id="profAvatar" class="pf-avatar"></div>
+            <div class="pf-info">
+                <h2 id="profName" class="pf-name"></h2>
+                <div class="pf-stats">
+                    <div><strong id="statRooms">0</strong><span>Rooms joined</span></div>
+                    <div><strong id="statMsgs">0</strong><span>Messages</span></div>
+                    <div id="statFriendsBox"><strong id="statFriends">0</strong><span id="statFriendsLbl">Friends</span></div>
+                </div>
+            </div>
+        </div>
+
+        <p id="profBio" class="pf-bio"></p>
+        <button type="button" id="editProfileBtn" class="secondary-btn">Edit profile</button>
+
+        <p class="myrooms-title">MY ROOMS</p>
+        <div id="myRoomsList"></div>
+
+        <button type="button" id="logoutBtn" class="secondary-btn">Log out</button>
+    </div>
+</main>
+
     <!-- CHAT -->
     <main id="chatPage" class="chat-page hidden">
 
         <header class="chat-header">
-            <button type="button" id="leaveBtn" class="hdr-btn" title="Leave">
+            <button type="button" id="leaveBtn" class="hdr-btn" title="Back">
                 <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></svg>
             </button>
 
@@ -72,7 +151,7 @@
             <button type="button" id="videoBtn" class="hdr-btn" title="Video call">
                 <svg viewBox="0 0 24 24"><rect x="3" y="6" width="12" height="12" rx="2"></rect><path d="M15 10l6-3v10l-6-3z"></path></svg>
             </button>
-            <button type="button" id="editRoomBtn" class="hdr-btn" title="Edit room">
+            <button type="button" id="editRoomBtn" class="hdr-btn" title="Room details">
                 <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
             </button>
         </header>
@@ -116,6 +195,22 @@
 
     </main>
 
+    <!-- BOTTOM NAV -->
+    <nav id="bottomNav" class="bottom-nav hidden">
+        <button type="button" class="nav-btn" data-tab="homePage" data-key="rooms">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v8M8 12h8"></path></svg>
+            <span>Rooms</span>
+        </button>
+        <button type="button" class="nav-btn" data-tab="chatsPage" data-key="chats">
+            <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1.2-4.4A8 8 0 1 1 21 12z"></path></svg>
+            <span>Chats</span>
+        </button>
+        <button type="button" class="nav-btn" data-tab="profilePage" data-key="me">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+            <span>Me</span>
+        </button>
+    </nav>
+
     <!-- ROOM DETAILS POPUP -->
     <div id="editRoomModal" class="modal hidden">
         <div class="modal-card">
@@ -131,9 +226,26 @@
         </div>
     </div>
 
-    <!-- Supabase -->
+    <!-- EDIT PROFILE POPUP -->
+    <div id="editProfileModal" class="modal hidden">
+        <div class="modal-card">
+            <h3>Edit profile</h3>
+            <div id="editProfAvatar" class="prof-avatar small"></div>
+            <label class="pick-btn">
+                Change photo
+                <input type="file" id="profFile" accept="image/*" hidden>
+            </label>
+            <input id="editName" type="text" maxlength="30" placeholder="Name">
+            <input id="editBio" type="text" maxlength="120" placeholder="Bio">
+            <button type="button" id="saveProfileBtn" class="primary-btn">Save</button>
+            <button type="button" id="cancelProfileBtn" class="secondary-btn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Scripts (order matters) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
+    <script src="auth.js"></script>
 
 </body>
-        </html>
+            </html>
