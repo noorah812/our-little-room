@@ -45,22 +45,40 @@
     </main>
 
     <!-- HOME = ROOMS TAB -->
-    <main id="homePage" class="page hidden">
-        <div class="card">
-            <div class="logo">💬</div>
-            <h1>Rooms</h1>
-            <p class="subtitle">Create a new room or join one.</p>
-            <button id="createBtn" class="primary-btn">Create Room</button>
-            <button id="showJoinBtn" class="secondary-btn">Join Existing Room</button>
+<main id="homePage" class="page top hidden">
+    <div class="list-wrap">
+        <div class="rooms-head">
+            <div id="homeAvatar" class="rh-avatar"></div>
+            <h2 class="list-title">Rooms</h2>
+            <button type="button" id="homeSearchBtn" class="hdr-btn" title="Search">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+            </button>
         </div>
-    </main>
-
-    <!-- CREATE ROOM -->
+        <p class="subtitle rooms-sub">Create or join voice and text rooms</p>
+        <div class="rooms-actions">
+            <button id="createBtn" class="primary-btn">Create Room</button>
+            <button id="showJoinBtn" class="secondary-btn">Join Room</button>
+        </div>
+        <div class="rooms-tabs">
+            <button type="button" class="rtab active" data-rt="text">Text Rooms</button>
+            <button type="button" class="rtab" data-rt="voice">Voice Rooms</button>
+            <button type="button" class="rtab" data-rt="all">My Rooms</button>
+        </div>
+        <div id="homeRooms"></div>
+    </div>
+</main>
+<!-- CREATE ROOM -->
     <main id="createPage" class="page hidden">
         <div class="card">
             <button class="back-btn" onclick="showPage('homePage')">← Back</button>
             <h2>Create Private Room</h2>
-            <p class="subtitle">Create one room for your group.</p>
+            <p class="subtitle">Choose a room type and set a password.</p>
+
+            <div class="type-pick">
+                <button type="button" class="tp active" data-type="text">Text room</button>
+                <button type="button" class="tp" data-type="voice">Voice room</button>
+            </div>
+
             <input id="createPassword" type="password" placeholder="Create password">
             <button id="createRoomBtn" class="primary-btn">Create Room</button>
 
@@ -88,11 +106,25 @@
     <!-- CHATS TAB -->
     <main id="chatsPage" class="page top hidden">
         <div class="list-wrap">
-            <h2 class="list-title">Chats</h2>
+            <div class="chats-head">
+    <h2 class="list-title">Chats</h2>
+    <button type="button" id="bellBtn" class="hdr-btn" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
+        <span id="bellBadge" class="bell-badge hidden"></span>
+    </button>
+</div>
             <button type="button" id="newDmBtn" class="secondary-btn">✉️ New message</button>
             <div id="chatsList"></div>
         </div>
     </main>
+    <!-- SEARCH TAB -->
+<main id="searchPage" class="page top hidden">
+    <div class="list-wrap">
+        <h2 class="list-title">Search</h2>
+        <input id="searchInput" type="text" placeholder="Search people" autocapitalize="none" autocomplete="off">
+        <div id="searchResults"></div>
+    </div>
+</main>
 
     <!-- PROFILE TAB -->
 <main id="profilePage" class="page top hidden">
@@ -196,20 +228,24 @@
     </main>
 
     <!-- BOTTOM NAV -->
-    <nav id="bottomNav" class="bottom-nav hidden">
-        <button type="button" class="nav-btn" data-tab="homePage" data-key="rooms">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v8M8 12h8"></path></svg>
-            <span>Rooms</span>
-        </button>
-        <button type="button" class="nav-btn" data-tab="chatsPage" data-key="chats">
-            <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1.2-4.4A8 8 0 1 1 21 12z"></path></svg>
-            <span>Chats</span>
-        </button>
-        <button type="button" class="nav-btn" data-tab="profilePage" data-key="me">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
-            <span>Me</span>
-        </button>
-    </nav>
+<nav id="bottomNav" class="bottom-nav hidden">
+    <button type="button" class="nav-btn" data-tab="homePage" data-key="rooms">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v8M8 12h8"></path></svg>
+        <span>Rooms</span>
+    </button>
+    <button type="button" class="nav-btn" data-tab="chatsPage" data-key="chats">
+        <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1.2-4.4A8 8 0 1 1 21 12z"></path></svg>
+        <span>Chats</span>
+    </button>
+    <button type="button" class="nav-btn" data-tab="searchPage" data-key="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+        <span>Search</span>
+    </button>
+    <button type="button" class="nav-btn" data-tab="profilePage" data-key="me">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+        <span>Me</span>
+    </button>
+</nav>
 
     <!-- ROOM DETAILS POPUP -->
     <div id="editRoomModal" class="modal hidden">
@@ -248,4 +284,4 @@
     <script src="auth.js"></script>
 
 </body>
-            </html>
+                </html>
