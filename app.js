@@ -47,6 +47,7 @@ $("createRoomBtn").addEventListener("click", async () => {
     if (error) { console.error(error); alert("ERROR: " + error.message); return; }
 
     currentRoom = data;
+    if (typeof applyNewRoomType === "function") await applyNewRoomType(data);
     $("newRoomCode").textContent = roomCode;
     $("createdRoom").classList.remove("hidden");
 });
@@ -126,6 +127,7 @@ async function openChat() {
 }
 
 // ---------- SEND TEXT ----------
+
 $("messageForm").addEventListener("submit", async event => {
     event.preventDefault();
     if (!currentRoom) return;
@@ -144,6 +146,7 @@ $("messageForm").addEventListener("submit", async event => {
     if (error) { console.error(error); alert("Message could not be sent."); return; }
 
     input.value = "";
+    if (typeof exitTypingMode === "function") exitTypingMode();
     clearReply();
 });
 
@@ -189,8 +192,8 @@ function subscribeToMessages() {
             applyRoomHeader();
         })
         .on("broadcast", { event: "typing" }, payload => {
-            showTyping(payload.payload.user);
-        })
+    showTyping(payload.payload.username);
+})
         .subscribe();
 }
 
@@ -215,6 +218,10 @@ function displayMessage(message) {
     name.style.fontWeight = "600";
     name.style.opacity = "0.8";
     name.style.marginBottom = "2px";
+    if (message.username !== currentUser) {
+    name.style.cursor = "pointer";
+    name.addEventListener("click", e => { e.stopPropagation(); openUserProfile(message.username); });
+}
     bubble.appendChild(name);
 
     if (message.reply_to) {
@@ -231,17 +238,25 @@ function displayMessage(message) {
     }
 
     let content;
-    if (message.media_url && message.media_type === "video") {
-        content = document.createElement("video");
-        content.controls = true;
-        content.preload = "metadata";
-        content.src = message.media_url;
-        content.className = "message-media";
-    } else if (message.media_url) {
-        content = document.createElement("img");
-        content.src = message.media_url;
-        content.className = "message-media";
-        content.alt = "Image";
+  if (message.media_url && message.media_type === "video") {
+    content = document.createElement("div");
+    content.className = "media-wrap";
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    v.muted = true;
+    v.playsInline = true;
+    v.src = message.media_url + "#t=0.1";
+    v.className = "message-media";
+    const badge = document.createElement("span");
+    badge.className = "play-badge";
+    content.append(v, badge);
+    content.addEventListener("click", e => { e.stopPropagation(); openMediaViewer(message.media_url, "video"); });
+} else if (message.media_url) {
+    content = document.createElement("img");
+    content.src = message.media_url;
+    content.className = "message-media";
+    content.alt = "Image";
+    content.addEventListener("click", e => { e.stopPropagation(); openMediaViewer(message.media_url, "image"); });
     } else if (message.audio_url) {
         content = document.createElement("audio");
         content.controls = true;
@@ -274,6 +289,7 @@ function displayMessage(message) {
    const p = avatarCache[message.username];
 const av = document.createElement("div");
 av.className = "msg-avatar";
+av.addEventListener("click", e => { e.stopPropagation(); openUserProfile(message.username); });
 if (p && p.avatar_url) av.style.backgroundImage = `url("${p.avatar_url}")`;
 else av.textContent = ((p && p.display_name) || message.username || "?").charAt(0).toUpperCase();
 if (message.username === currentUser) {
@@ -285,8 +301,14 @@ if (message.username === currentUser) {
 }
     attachLongPress(wrapper, message, wrapper);
     attachSwipeReply(wrapper, message);
+    attachDoubleTap(wrapper, message);
 
     container.appendChild(wrapper);
+    if (typingUsers[message.username]) {
+    clearTimeout(typingUsers[message.username]);
+    delete typingUsers[message.username];
+}
+updateTyping();
     container.scrollTop = container.scrollHeight;
 }
 
@@ -438,7 +460,7 @@ voiceRecordBtn.addEventListener("click", async () => {
         stopRecordTimer();
     }
 });
-    // ---------- PHOTO / VIDEO ----------
+        // ---------- PHOTO / VIDEO ----------
 const mediaFile = $("mediaFile");
 
 $("attachBtn").addEventListener("click", () => {
@@ -568,7 +590,7 @@ async function sendReaction(messageId, emoji) {
 }
 
 function closeMessageMenu() {
-    const old = document.querySelector(".message-menu");
+    const old = document.querySelector(".");
     if (old) old.remove();
 }
 
@@ -578,52 +600,100 @@ function openMessageMenu(message, wrapper) {
     const menu = document.createElement("div");
     menu.className = "message-menu";
 
+    // ---------- REACTIONS ----------
+    
     REACTIONS.forEach(emoji => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.appendChild(makeEmojiImg(emoji));
-        b.addEventListener("click", () => {
-            sendReaction(message.id, emoji);
-            closeMessageMenu();
-        });
-        menu.appendChild(b);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "reaction-menu-btn";
+    b.title = emoji;
+
+    const img = makeEmojiImg(emoji);
+    img.className = "ios-emoji reaction-menu-emoji";
+
+    b.appendChild(img);
+
+    b.addEventListener("click", async (e) => {
+        e.stopPropagation();
+
+        await sendReaction(message.id, emoji);
+        closeMessageMenu();
     });
 
+    menu.appendChild(b);
+});
+
+    // ---------- BUBBLE STYLE ----------
+    const bubbleStyleBtn = document.createElement("button");
+    bubbleStyleBtn.type = "button";
+    bubbleStyleBtn.className = "message-menu-text-btn";
+    bubbleStyleBtn.textContent = "Bubble Style";
+
+    bubbleStyleBtn.addEventListener("click", () => {
+        closeMessageMenu();
+        openBubbleStylePicker(message, wrapper);
+    });
+
+    menu.appendChild(bubbleStyleBtn);
+
+    // ---------- DELETE ----------
     if (message.username === currentUser) {
         const del = document.createElement("button");
         del.type = "button";
-        del.appendChild(makeEmojiImg("🗑️"));
+        del.className = "message-menu-text-btn danger";
+        del.textContent = "Delete";
+
         del.addEventListener("click", async () => {
             closeMessageMenu();
+
             if (!confirm("Delete this message?")) return;
 
             const { data, error } = await supabaseClient
-                .from("messages").delete().eq("id", message.id).select();
+                .from("messages")
+                .delete()
+                .eq("id", message.id)
+                .select();
 
             if (error || !data || data.length === 0) {
                 console.error(error);
                 alert("Delete failed.");
                 return;
             }
+
             wrapper.remove();
         });
+
         menu.appendChild(del);
     }
 
-    document.body.appendChild(menu);
+    // ---------- CANCEL ----------
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "message-menu-text-btn";
+    cancel.textContent = "Cancel";
 
-    const rect = wrapper.getBoundingClientRect();
-    menu.style.top = Math.max(rect.top - 56, 80) + "px";
+    cancel.addEventListener("click", closeMessageMenu);
 
-    const outside = e => {
-        if (!menu.contains(e.target)) {
-            closeMessageMenu();
-            document.removeEventListener("pointerdown", outside);
-        }
-    };
-    setTimeout(() => document.addEventListener("pointerdown", outside), 300);
+    menu.appendChild(cancel);
+
+    setTimeout(() => {
+        document.addEventListener("pointerdown", outside);
+    }, 300);
 }
-
+    
+function openBubbleStylePicker(message, wrapper) {
+    showSheet([
+        ["Classic", () => applyBubbleStyle(message, "classic", wrapper)],
+        ["Soft Cute", () => applyBubbleStyle(message, "soft", wrapper)],
+        ["Gradient", () => applyBubbleStyle(message, "gradient", wrapper)],
+        ["Glass", () => applyBubbleStyle(message, "glass", wrapper)],
+        ["Flower Frame", () => applyBubbleStyle(message, "flower", wrapper)],
+        ["Butterfly", () => applyBubbleStyle(message, "butterfly", wrapper)],
+        ["Neon", () => applyBubbleStyle(message, "neon", wrapper)],
+        ["Y2K", () => applyBubbleStyle(message, "y2k", wrapper)],
+        ["Cancel", () => {}]
+    ], "Bubble Style");
+}
 function attachLongPress(target, message, wrapper) {
     let timer;
     const start = () => { timer = setTimeout(() => openMessageMenu(message, wrapper), 600); };
@@ -661,62 +731,127 @@ function clearReply() {
 $("replyCancel").addEventListener("click", clearReply);
 
 function attachSwipeReply(el, message) {
-    let startX = 0, startY = 0, moved = false;
+    let startX = 0, startY = 0, mode = null;
 
     el.addEventListener("touchstart", e => {
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
-        moved = false;
+        mode = null;
     }, { passive: true, capture: true });
 
     el.addEventListener("touchmove", e => {
+        if (mode === "scroll") return;
         const dx = e.touches[0].clientX - startX;
-        const dy = Math.abs(e.touches[0].clientY - startY);
-        if (dy > 30) return;
-        if (Math.abs(dx) > 10) {
-            moved = true;
-            el.style.transform = "translateX(" + Math.max(-60, Math.min(60, dx)) + "px)";
+        const dy = e.touches[0].clientY - startY;
+        if (mode === null) {
+            if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx) * 0.6) { mode = "scroll"; return; }
+            if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) * 2.5) mode = "swipe";
+            else return;
         }
+        el.style.transform = "translateX(" + Math.max(-60, Math.min(60, dx)) + "px)";
     }, { passive: true, capture: true });
 
-    el.addEventListener("touchend", e => {
-        const dx = e.changedTouches[0].clientX - startX;
+    const reset = () => {
         el.style.transition = "transform 0.2s";
         el.style.transform = "";
         setTimeout(() => { el.style.transition = ""; }, 200);
-        if (moved && Math.abs(dx) > 50) startReply(message);
+    };
+
+    el.addEventListener("touchend", e => {
+        const dx = e.changedTouches[0].clientX - startX;
+        const wasSwipe = mode === "swipe";
+        mode = null;
+        reset();
+        if (wasSwipe && Math.abs(dx) > 70) startReply(message);
     }, { capture: true });
+
+    el.addEventListener("touchcancel", () => { mode = null; reset(); }, { capture: true });
 }
 
-// ---------- TYPING ----------
+function attachDoubleTap(el, message) {
+    let last = 0;
+    el.addEventListener("click", e => {
+        if (e.target.closest("audio, video, .reaction-chip, .reply-quote")) return;
+        const now = Date.now();
+        if (now - last < 350) {
+            last = 0;
+            if (message.id) sendReaction(message.id, REACTIONS[0]);
+        } else {
+            last = now;
+        }
+    });
+}
+
+// ================================
+// TYPING INDICATOR
+// ================================
+
 const typingUsers = {};
+let lastTypingSent = 0;
 
 function showTyping(user) {
+    if (!user || user === currentUser) return;
     clearTimeout(typingUsers[user]);
     typingUsers[user] = setTimeout(() => {
         delete typingUsers[user];
         updateTyping();
-    }, 3000);
+    }, 3500);
     updateTyping();
 }
 
 function updateTyping() {
     if (isRecording) return;
-    const names = Object.keys(typingUsers);
-    $("typingIndicator").textContent = names.length
-        ? names.join(", ") + (names.length > 1 ? " are" : " is") + " typing..."
-        : "";
+    const names = Object.keys(typingUsers).filter(n => n !== currentUser);
+    const box = $("messages");
+    let el = $("typingBubble");
+
+    if (!names.length) {
+        if (el) el.remove();
+        $("typingIndicator").textContent = "";
+        return;
+    }
+
+    const who = names[0];
+    if (!(who in avatarCache)) loadAvatars([who]).then(updateTyping);
+
+    const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 140;
+    if (!el) {
+        el = document.createElement("div");
+        el.id = "typingBubble";
+        el.className = "message typing-msg";
+        el.innerHTML =
+            '<div class="msg-avatar"></div>' +
+            '<div class="message-bubble typing-bubble"><i></i><i></i><i></i></div>';
+    }
+    const p = avatarCache[who];
+    const av = el.querySelector(".msg-avatar");
+    if (p && p.avatar_url) {
+        av.style.backgroundImage = `url("${p.avatar_url}")`;
+        av.textContent = "";
+    } else {
+        av.style.backgroundImage = "";
+        av.textContent = ((p && p.display_name) || who).charAt(0).toUpperCase();
+    }
+    box.appendChild(el);
+    if (nearBottom) box.scrollTop = box.scrollHeight;
 }
 
-let lastTypingSent = 0;
-$("messageInput").addEventListener("input", () => {
-    if (!realtimeChannel || !currentUser) return;
+function sendTyping() {
+    if (!currentRoom || !realtimeChannel || !currentUser) return;
     const now = Date.now();
     if (now - lastTypingSent < 1500) return;
     lastTypingSent = now;
-    realtimeChannel.send({ type: "broadcast", event: "typing", payload: { user: currentUser } });
-});
+    realtimeChannel.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { username: currentUser }
+    });
+}
 
+$("messageInput").addEventListener("input", () => {
+    if (typeof syncSendMode === "function") syncSendMode();
+    sendTyping();
+});
 // ---------- ROOM HEADER ----------
 function setAvatar(el, url) {
     if (url) {
@@ -875,8 +1010,9 @@ function convertEmoji(root) {
         }
         node.replaceWith(frag);
     });
-        }
-        let emojiScheduled = false;
+}
+
+let emojiScheduled = false;
 function scheduleEmoji() {
     if (emojiScheduled) return;
     emojiScheduled = true;
@@ -893,3 +1029,63 @@ new MutationObserver(scheduleEmoji).observe(document.body, {
 });
 
 convertEmoji(document.body);
+// ---------- MEDIA VIEWER ----------
+function openMediaViewer(url, type) {
+    const old = document.getElementById("mediaViewer");
+    if (old) old.remove();
+
+    const v = document.createElement("div");
+    v.id = "mediaViewer";
+    v.className = "media-viewer";
+
+    const bar = document.createElement("div");
+    bar.className = "mv-bar";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "mv-close";
+    close.textContent = "×";
+    close.addEventListener("click", () => v.remove());
+    const save = document.createElement("button");
+    save.type = "button";
+    save.className = "mv-save";
+    save.textContent = "Save";
+    save.addEventListener("click", () => saveMedia(url, type, save));
+    bar.append(close, save);
+
+    let el;
+    if (type === "video") {
+        el = document.createElement("video");
+        el.controls = true;
+        el.autoplay = true;
+        el.playsInline = true;
+    } else {
+        el = document.createElement("img");
+    }
+    el.src = url;
+    el.className = "mv-media";
+
+    v.append(bar, el);
+    document.body.appendChild(v);
+}
+
+async function saveMedia(url, type, btn) {
+    try {
+        btn.textContent = "Saving...";
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const sub = (blob.type.split("/")[1] || "").replace("quicktime", "mov").replace("jpeg", "jpg");
+        const ext = sub || (type === "video" ? "mp4" : "jpg");
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "private-room-" + Date.now() + "." + ext;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+        btn.textContent = "Saved";
+    } catch (e) {
+        console.error(e);
+        btn.textContent = "Save";
+        window.open(url, "_blank");
+    }
+                                }
